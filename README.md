@@ -1,4 +1,4 @@
-# vite-plugin-hyperframes-jsx
+# @inurun/vite-plugin-hyperframes-jsx
 
 Write [HyperFrames](https://www.npmjs.com/package/hyperframes) compositions in JSX, bundled by Vite.
 
@@ -13,7 +13,7 @@ The package ships a Vite plugin (sets the JSX import source) and a small runtime
 ## Install
 
 ```sh
-pnpm add vite-plugin-hyperframes-jsx
+pnpm add @inurun/vite-plugin-hyperframes-jsx
 ```
 
 Vite 8 or newer is a peer dependency. `gsap` is installed as a dependency.
@@ -23,29 +23,29 @@ Vite 8 or newer is a peer dependency. `gsap` is installed as a dependency.
 ```ts
 // vite.config.ts
 import { defineConfig } from "vite";
-import { hyperframes } from "vite-plugin-hyperframes-jsx";
+import { hyperframes } from "@inurun/vite-plugin-hyperframes-jsx";
 
 export default defineConfig({
   plugins: [hyperframes()],
 });
 ```
 
-The plugin sets Oxc's automatic JSX runtime with `importSource: "vite-plugin-hyperframes-jsx"`, and excludes the package from dependency pre-bundling: a pre-bundled second copy would split the runtime's module state between the JSX runtime and the runtime API.
+The plugin sets Oxc's automatic JSX runtime with `importSource: "@inurun/vite-plugin-hyperframes-jsx"`, and excludes the package from dependency pre-bundling: a pre-bundled second copy would split the runtime's module state between the JSX runtime and the runtime API.
 
 ## JSX pragma and TypeScript
 
 If the same project also compiles React (an admin UI next to the video, for example), set the import source per file:
 
 ```tsx
-/** @jsxImportSource vite-plugin-hyperframes-jsx */
+/** @jsxImportSource @inurun/vite-plugin-hyperframes-jsx */
 ```
 
-TypeScript then finds the `JSX` namespace in `vite-plugin-hyperframes-jsx/jsx-runtime`. A video-only project can instead set `"jsx": "react-jsx"` and `"jsxImportSource": "vite-plugin-hyperframes-jsx"` in `tsconfig.json`.
+TypeScript then finds the `JSX` namespace in `@inurun/vite-plugin-hyperframes-jsx/jsx-runtime`. A video-only project can instead set `"jsx": "react-jsx"` and `"jsxImportSource": "@inurun/vite-plugin-hyperframes-jsx"` in `tsconfig.json`.
 
 ## Example
 
 ```tsx
-/** @jsxImportSource vite-plugin-hyperframes-jsx */
+/** @jsxImportSource @inurun/vite-plugin-hyperframes-jsx */
 import {
   AbsoluteFill,
   Frame,
@@ -55,7 +55,7 @@ import {
   slide,
   TransitionSeries,
   useVideoConfig,
-} from "vite-plugin-hyperframes-jsx/runtime";
+} from "@inurun/vite-plugin-hyperframes-jsx/runtime";
 
 function Title({ text }: { text: string }) {
   // Runs once. Read the config here; compute frame values in updaters.
@@ -98,11 +98,11 @@ registerClock("main", composition, config.fps, config.durationInFrames);
 
 ## API
 
-`vite-plugin-hyperframes-jsx`
+`@inurun/vite-plugin-hyperframes-jsx`
 
 - `hyperframes(options?)`: the Vite plugin.
 
-`vite-plugin-hyperframes-jsx/runtime`
+`@inurun/vite-plugin-hyperframes-jsx/runtime`
 
 - Mounting: `mountComposition(tree, container, config)`, `mount`, `mountHost`, `defineMount` (custom-mount components), `jsx`, `Fragment`.
 - Clock: `registerClock(compositionId, composition, fps, durationInFrames)`, `requestRender()` (re-render the current frame after async data arrives), `FRAME_EPSILON`.
@@ -112,7 +112,7 @@ registerClock("main", composition, config.fps, config.durationInFrames);
 - Build-time hooks: `useVideoConfig()`, `useSequenceTiming()`, `onMounted(callback)`, `afterMounted(callback)` (after every `onMounted`), `registerPending(promise)`, `useElementSize()`, `createContext` / `useContext`.
 - Types: `HfNode`, `HfElement`, `JSX`, `StyleObject`, `VideoConfig`, `Clock`, `MountedComposition`, `MountContext`, `SequenceProps`, `TransitionTiming`, `TransitionPresentation`, `SlideDirection`, `Size`, `Context`.
 
-`vite-plugin-hyperframes-jsx/static-file`
+`@inurun/vite-plugin-hyperframes-jsx/static-file`
 
 - `staticFile(path)`: a public-dir asset URL relative to the composition HTML (works under `base: "./"`). A separate entry with no side effects and no DOM or GSAP, so server code can import it.
 

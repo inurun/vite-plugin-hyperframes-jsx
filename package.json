@@ -1,5 +1,5 @@
 {
-  "name": "vite-plugin-hyperframes-jsx",
+  "name": "@inurun/vite-plugin-hyperframes-jsx",
   "version": "0.1.0",
   "description": "Build-once JSX for HyperFrames compositions, as a Vite plugin and a tiny DOM runtime",
   "keywords": [
@@ -46,6 +46,10 @@
       "default": "./dist/static-file.js"
     },
     "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "build": "tsdown",

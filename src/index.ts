@@ -1,7 +1,7 @@
 import type { Plugin } from "vite";
 
 /** This package: the JSX import source and the runtime import specifier. */
-const PACKAGE_NAME = "vite-plugin-hyperframes-jsx";
+const PACKAGE_NAME = "@inurun/vite-plugin-hyperframes-jsx";
 
 export function hyperframes(): Plugin {
   return {
