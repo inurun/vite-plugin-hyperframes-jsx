@@ -29,6 +29,7 @@ type BuildState = {
   scope: ScopeNode;
   pending: Promise<unknown>[];
   mounted: MountedCallback[];
+  afterMounted: MountedCallback[];
   contexts: Map<object, unknown[]>;
 };
 
@@ -90,6 +91,14 @@ export function registerPending(promise: Promise<unknown>) {
  */
 export function onMounted(callback: MountedCallback) {
   getBuildState().mounted.push(callback);
+}
+
+/**
+ * Runs once after every `onMounted` callback finished (e.g. to build animations from sizes
+ * measured there). Callbacks run in parallel; returned promises are awaited.
+ */
+export function afterMounted(callback: MountedCallback) {
+  getBuildState().afterMounted.push(callback);
 }
 
 export function useVideoConfig(): VideoConfig {

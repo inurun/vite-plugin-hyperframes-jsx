@@ -32,11 +32,6 @@ export default defineConfig({
 
 The plugin sets Oxc's automatic JSX runtime with `importSource: "vite-plugin-hyperframes-jsx"`, and excludes the package from dependency pre-bundling: a pre-bundled second copy would split the runtime's module state between the JSX runtime and the runtime API.
 
-Options (all optional):
-
-- `html`: `{ compositionId, durationSec, fps, width, height }` fills `%HF_COMPOSITION_ID%`, `%HF_DURATION%`, `%HF_FPS%`, `%HF_WIDTH%` and `%HF_HEIGHT%` in a static `index.html`.
-- `publicLinks`: `{ dir, names }` symlinks `<dir>/<name>` into the build output instead of copying large assets.
-
 ## JSX pragma and TypeScript
 
 If the same project also compiles React (an admin UI next to the video, for example), set the import source per file:
@@ -99,7 +94,7 @@ const composition = await mountComposition(<Video />, stage, config);
 registerClock("main", composition, config.fps, config.durationInFrames);
 ```
 
-`mountComposition` mounts the tree once and waits for image decodes, fonts and `onMounted` callbacks. `registerClock` then publishes the timeline on `window.__timelines[compositionId]` for HyperFrames to seek.
+`mountComposition` mounts the tree once and waits for image decodes, fonts and `onMounted` / `afterMounted` callbacks. `registerClock` then publishes the timeline on `window.__timelines[compositionId]` for HyperFrames to seek.
 
 ## API
 
@@ -114,7 +109,7 @@ registerClock("main", composition, config.fps, config.durationInFrames);
 - Timing: `Sequence` (`from`, `durationInFrames`, `layout`), `Loop` (`durationInFrames`, `times`), `TimeShift` (`by`: a number or a function of the frame), `TransitionSeries` with `.Sequence` / `.Transition`, `linearTiming({ durationInFrames, easing? })`, `slide({ direction? })`.
 - Frame-dependent DOM: `Frame` (`style`, `text`, `attrs` as functions of the scope-local frame), `registerUpdater(updater)`, `applyStyle`.
 - Elements: `AbsoluteFill`, `ABSOLUTE_FILL`, `Img` (awaits `decode()` before the clock starts).
-- Build-time hooks: `useVideoConfig()`, `useSequenceTiming()`, `onMounted(callback)`, `registerPending(promise)`, `useElementSize()`, `createContext` / `useContext`.
+- Build-time hooks: `useVideoConfig()`, `useSequenceTiming()`, `onMounted(callback)`, `afterMounted(callback)` (after every `onMounted`), `registerPending(promise)`, `useElementSize()`, `createContext` / `useContext`.
 - Types: `HfNode`, `HfElement`, `JSX`, `StyleObject`, `VideoConfig`, `Clock`, `MountedComposition`, `MountContext`, `SequenceProps`, `TransitionTiming`, `TransitionPresentation`, `SlideDirection`, `Size`, `Context`.
 
 `vite-plugin-hyperframes-jsx/static-file`

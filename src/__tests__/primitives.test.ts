@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { jsx } from "../jsx-runtime";
 import { Frame } from "../primitives/frame";
-import { onMounted } from "../scope";
+import { afterMounted, onMounted } from "../scope";
 import { render } from "./render";
 
 describe("Frame", () => {
@@ -68,5 +68,22 @@ describe("onMounted", () => {
       }, {}),
     ]);
     expect(order).toEqual(["first:true", "first:done", "second"]);
+  });
+
+  it("runs afterMounted callbacks once every onMounted callback finished", async () => {
+    const order: string[] = [];
+    await render(
+      jsx(() => {
+        afterMounted(() => {
+          order.push("after");
+        });
+        onMounted(async () => {
+          await Promise.resolve();
+          order.push("mounted");
+        });
+        return null;
+      }, {}),
+    );
+    expect(order).toEqual(["mounted", "after"]);
   });
 });

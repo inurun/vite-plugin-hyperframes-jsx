@@ -27,6 +27,7 @@ export {
 } from "./primitives/transition-series";
 export { staticFile } from "./static-file";
 export {
+  afterMounted,
   onMounted,
   registerPending,
   registerUpdater,

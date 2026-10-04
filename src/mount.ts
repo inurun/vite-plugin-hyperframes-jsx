@@ -123,7 +123,7 @@ export type MountedComposition = {
 
 /**
  * Mounts the tree once. Pending promises (image decodes...), fonts and
- * `onMounted` callbacks are awaited before resolving so the caller can
+ * `onMounted` / `afterMounted` callbacks are awaited before resolving so the caller can
  * register the HF timeline.
  */
 export async function mountComposition(
@@ -137,6 +137,7 @@ export async function mountComposition(
     scope: root,
     pending: [] as Promise<unknown>[],
     mounted: [] as (() => unknown)[],
+    afterMounted: [] as (() => unknown)[],
     contexts: new Map<object, unknown[]>(),
   };
   setBuildState(state);
@@ -149,5 +150,6 @@ export async function mountComposition(
   for (const callback of state.mounted) {
     await callback();
   }
+  await Promise.all(state.afterMounted.map((callback) => callback()));
   return { root, renderFrame: (frame) => renderFrame(root, frame) };
 }
