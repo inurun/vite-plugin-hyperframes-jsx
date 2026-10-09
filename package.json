@@ -42,9 +42,9 @@
       "types": "./dist/jsx-dev-runtime.d.ts",
       "default": "./dist/jsx-dev-runtime.js"
     },
-    "./static-file": {
-      "types": "./dist/static-file.d.ts",
-      "default": "./dist/static-file.js"
+    "./asset-url": {
+      "types": "./dist/asset-url.d.ts",
+      "default": "./dist/asset-url.js"
     },
     "./package.json": "./package.json"
   },

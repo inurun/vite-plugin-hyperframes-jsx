@@ -11,7 +11,7 @@ Write [HyperFrames](https://github.com/heygen-com/hyperframes) compositions in J
 - **Frame values only in updaters.** Anything that depends on time is a pure function of the frame (`style={(frame) => ...}` on `<Frame>`, or `registerUpdater`). Seeking to any frame gives the same DOM, in any order, which is what HyperFrames needs to render deterministically.
 - **GSAP only as the seekable clock.** `registerClock` registers one paused GSAP timeline with a single linear tween for HyperFrames to seek. Its `onUpdate` evaluates every updater at the current frame. Animation libraries are up to you.
 
-The package ships a Vite plugin (sets the JSX import source) and a small runtime (`Sequence`, `Loop`, `TimeShift`, `TransitionSeries`, `Frame`, context, mounting and the clock).
+The package ships a Vite plugin (sets the JSX import source) and a small runtime (`Clip`, `Loop`, `TimeShift`, `ClipSeries`, `Frame`, context, mounting and the clock).
 
 ## Install
 
@@ -80,44 +80,44 @@ The composition root lives in the HTML that HyperFrames renders:
 ```tsx
 // src/main.tsx
 import {
-  AbsoluteFill,
+  Fill,
   Frame,
-  linearTiming,
+  linear,
   mountComposition,
   registerClock,
   slide,
-  TransitionSeries,
-  useVideoConfig,
+  ClipSeries,
+  getVideoConfig,
 } from "@inurun/vite-plugin-hyperframes-jsx/runtime";
 
 function Title({ text }: { text: string }) {
   // Runs once. Read the config here; compute frame values in updaters.
-  const { durationInFrames } = useVideoConfig();
+  const { durationInFrames } = getVideoConfig();
   return (
-    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", background: "#111" }}>
+    <Fill style={{ justifyContent: "center", alignItems: "center", background: "#111" }}>
       <Frame
         as="h1"
         style={(frame) => ({ color: "white", opacity: Math.min(1, frame / 15) })}
         text={(frame) => `${text} ${durationInFrames - frame}`}
       />
-    </AbsoluteFill>
+    </Fill>
   );
 }
 
 function Video() {
   return (
-    <TransitionSeries>
-      <TransitionSeries.Sequence durationInFrames={90}>
+    <ClipSeries>
+      <ClipSeries.Clip durationInFrames={90}>
         <Title text="Hello" />
-      </TransitionSeries.Sequence>
-      <TransitionSeries.Transition
-        timing={linearTiming({ durationInFrames: 20 })}
+      </ClipSeries.Clip>
+      <ClipSeries.Transition
+        timing={linear({ durationInFrames: 20 })}
         presentation={slide({ direction: "from-right" })}
       />
-      <TransitionSeries.Sequence durationInFrames={90}>
+      <ClipSeries.Clip durationInFrames={90}>
         <Title text="World" />
-      </TransitionSeries.Sequence>
-    </TransitionSeries>
+      </ClipSeries.Clip>
+    </ClipSeries>
   );
 }
 
@@ -170,20 +170,20 @@ async function show(data: Data) {
 
 - Mounting: `mountComposition(tree, container, config)` → `{ config, renderFrame, dispose }`.
 - Clock: `registerClock(compositionId, composition)` → `{ timeline, setComposition, requestRender, dispose }`; `requestRender()` re-renders the current frame of every clock (e.g. after async data arrived); `FRAME_EPSILON`.
-- Timing: `Sequence` (`from`, `durationInFrames`, `layout`), `Loop` (`durationInFrames`, `times`), `TimeShift` (`by`: a number or a function of the frame), `TransitionSeries` with `.Sequence` / `.Transition`, `linearTiming({ durationInFrames, easing? })`, `slide({ direction? })`.
+- Timing: `Clip` (`from`, `durationInFrames`, `layout`), `Loop` (`durationInFrames`, `times`), `TimeShift` (`by`: a number or a function of the frame), `ClipSeries` with `.Clip` / `.Transition`, `linear({ durationInFrames, easing? })`, `slide({ direction? })`.
 - Frame-dependent DOM: `Frame` (`as`, and `style`, `text`, `attrs` as functions of the scope-local frame), `registerUpdater(updater)`, `applyStyle`.
-- Elements: `AbsoluteFill`, `ABSOLUTE_FILL`, `Img` (awaits `decode()` before the clock starts; warns when it fails).
-- Build-time hooks (call them in a component body): `useVideoConfig()`, `useSequenceTiming()`, `onMounted(callback)`, `afterMounted(callback)` (after every `onMounted`), `registerPending(promise)`, `useElementSize()`, `createContext` / `useContext`.
-- Low-level, for custom primitives: `defineMount(mountFn)` (a component that mounts its own DOM, as `Sequence` and `Frame` do), `mount`, `mountHost`, `jsx`, `Fragment`. These may change between minor versions before 1.0.
-- Types: `HfNode`, `HfElement`, `JSX`, `StyleObject`, `VideoConfig`, `Clock`, `MountedComposition`, `Updater`, `MountedCallback`, the props of every primitive (`SequenceProps`, `LoopProps`, `TimeShiftProps`, `FrameProps`, `ImgProps`, `AbsoluteFillProps`, `TransitionSeriesSequenceProps`, `TransitionSeriesTransitionProps`), `HtmlProps`, `SvgProps`, `TransitionTiming`, `TransitionPresentation`, `SlideDirection`, `Size`, `Context`, `CustomMount`, `MountContext`.
+- Elements: `Fill`, `FILL`, `Img` (awaits `decode()` before the clock starts; warns when it fails).
+- Build-time functions (call them in a component body; they run once, when the tree mounts): `getVideoConfig()`, `getClipTiming()`, `onMounted(callback)`, `afterMounted(callback)` (after every `onMounted`), `registerPending(promise)`, `measureElement()`, `createContext` / `readContext`.
+- Low-level, for custom primitives: `defineMount(mountFn)` (a component that mounts its own DOM, as `Clip` and `Frame` do), `mount`, `mountHost`, `jsx`, `Fragment`. These may change between minor versions before 1.0.
+- Types: `HfNode`, `HfElement`, `JSX`, `StyleObject`, `VideoConfig`, `Clock`, `MountedComposition`, `Updater`, `MountedCallback`, the props of every primitive (`ClipProps`, `LoopProps`, `TimeShiftProps`, `FrameProps`, `ImgProps`, `FillProps`, `ClipSeriesClipProps`, `ClipSeriesTransitionProps`), `HtmlProps`, `SvgProps`, `TransitionTiming`, `TransitionPresentation`, `SlideDirection`, `Size`, `Context`, `CustomMount`, `MountContext`.
 
-`@inurun/vite-plugin-hyperframes-jsx/static-file`
+`@inurun/vite-plugin-hyperframes-jsx/asset-url`
 
-- `staticFile(path)`: a public-dir asset URL relative to the composition HTML (works under `base: "./"`). A separate entry with no side effects and no DOM or GSAP, so server code can import it.
+- `assetUrl(path)`: a public-dir asset URL relative to the composition HTML (works under `base: "./"`). A separate entry with no side effects and no DOM or GSAP, so server code can import it.
 
-Easing and interpolation are not included: pass any `(t: number) => number` (for example from `d3-ease`) to `linearTiming`, and bring your own animation library inside updaters.
+Easing and interpolation are not included: pass any `(t: number) => number` (for example from `d3-ease`) to `linear`, and bring your own animation library inside updaters.
 
-Invalid input fails early with a descriptive error: a non-positive `fps` or size, a non-integer `durationInFrames`, a negative `Sequence` duration, a `Loop` with a non-positive length or non-integer `times`, a `TransitionSeries.Transition` that does not sit between two sequences. Build-time hooks called outside the mount (in an updater or an `onMounted` callback) say so.
+Invalid input fails early with a descriptive error: a non-positive `fps` or size, a non-integer `durationInFrames`, a negative `Clip` duration, a `Loop` with a non-positive length or non-integer `times`, a `ClipSeries.Transition` that does not sit between two clips. Build-time functions called outside the mount (in an updater or an `onMounted` callback) say so.
 
 ## Compatibility
 
@@ -194,7 +194,25 @@ The runtime talks to HyperFrames through its documented composition contract: a 
 - **Audio must be static.** HyperFrames render does not pick up `<audio>` elements created at runtime. Put audio clips in the composition HTML (a static manifest) instead of mounting them from JSX.
 - **No `Date` subclasses.** HyperFrames render replaces `Date` with a virtual clock shim, which breaks subclasses such as `TZDate` from `@date-fns/tz`. Format dates with `Intl.DateTimeFormat` and a `timeZone` option.
 - **Frame values belong in updaters.** Components run once, so reading time in a component body freezes it at mount. Use `Frame`, `registerUpdater` or a `TimeShift`.
+- **`hyperframes lint` reports `missing_timeline_registry`.** The linter looks for `window.__timelines` in the HTML, but `registerClock` runs from the bundled script. The render is unaffected; use `--strict` only if you accept this finding.
 - **The clock floors frames with `FRAME_EPSILON`.** HyperFrames seeks to exact frame times; tween rounding can leave the value slightly below an integer late in long videos. If you convert seconds to frames elsewhere (a preview player), use `Math.floor(seconds * fps + FRAME_EPSILON)` so both agree.
+
+## Prior art
+
+The component model is inspired by [Remotion](https://www.remotion.dev), which pioneered writing video as components with frame-based timing. If you know Remotion, these are the closest equivalents (the semantics differ: components here run once and frame values live in updaters, not in re-renders):
+
+| Remotion                                              | This package                                                        |
+| ----------------------------------------------------- | ------------------------------------------------------------------- |
+| `<Sequence>`                                          | `<Clip>`                                                            |
+| `<TransitionSeries>` with `.Sequence` / `.Transition` | `<ClipSeries>` with `.Clip` / `.Transition`                         |
+| `<AbsoluteFill>`                                      | `<Fill>`                                                            |
+| `<Loop>`, `<Img>`, `slide()`                          | `<Loop>`, `<Img>`, `slide()`                                        |
+| `linearTiming()`                                      | `linear()`                                                          |
+| `useVideoConfig()`                                    | `getVideoConfig()`                                                  |
+| `staticFile()`                                        | `assetUrl()`                                                        |
+| `useCurrentFrame()`                                   | `<Frame style={(frame) => ...}>`, `registerUpdater((frame) => ...)` |
+
+All code in this repository is independently implemented; it contains no code from Remotion and is not affiliated with it. The list of unitless CSS properties follows React's (MIT).
 
 ## Contributing
 

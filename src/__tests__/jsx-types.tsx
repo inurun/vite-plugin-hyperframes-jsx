@@ -1,15 +1,5 @@
 // Type tests: checked by `tsc`, never run.
-import {
-  AbsoluteFill,
-  Frame,
-  Img,
-  Loop,
-  Sequence,
-  linearTiming,
-  slide,
-  TransitionSeries,
-  type HfNode,
-} from "../runtime";
+import { Fill, Frame, Img, Loop, Clip, linear, slide, ClipSeries, type HfNode } from "../runtime";
 
 function Title({ text }: { text: string }) {
   return <h1>{text}</h1>;
@@ -32,22 +22,22 @@ export const valid: HfNode[] = [
     <fePointLight pointsAtX={1} />
   </svg>,
   <my-element anything={1} />,
-  <AbsoluteFill style={{ justifyContent: "center", "--gap": 4 }}>
+  <Fill style={{ justifyContent: "center", "--gap": 4 }}>
     <Title text="Hello" />
-  </AbsoluteFill>,
+  </Fill>,
   <Frame as="h1" style={(frame) => ({ opacity: frame / 10 })} text={(frame) => String(frame)} />,
   <Frame as="path" attrs={(frame) => ({ d: `M0 ${frame}` })} strokeWidth={2} />,
   <Frame as={Img} src="a.png" style={{ width: 10 }} />,
-  <Sequence from={10} durationInFrames={20} layout="none" />,
+  <Clip from={10} durationInFrames={20} layout="none" />,
   <Loop durationInFrames={10} times={2} />,
-  <TransitionSeries>
-    <TransitionSeries.Sequence durationInFrames={30}>a</TransitionSeries.Sequence>
-    <TransitionSeries.Transition
-      timing={linearTiming({ durationInFrames: 10 })}
+  <ClipSeries>
+    <ClipSeries.Clip durationInFrames={30}>a</ClipSeries.Clip>
+    <ClipSeries.Transition
+      timing={linear({ durationInFrames: 10 })}
       presentation={slide({ direction: "from-right" })}
     />
-    <TransitionSeries.Sequence durationInFrames={30}>b</TransitionSeries.Sequence>
-  </TransitionSeries>,
+    <ClipSeries.Clip durationInFrames={30}>b</ClipSeries.Clip>
+  </ClipSeries>,
 ];
 
 export const invalid: HfNode[] = [

@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { jsx } from "../jsx-runtime";
 import { Frame } from "../primitives/frame";
-import { linearTiming, slide, TransitionSeries } from "../primitives/transition-series";
+import { linear, slide, ClipSeries } from "../primitives/clip-series";
 import { render } from "./render";
 
 const page = (id: string) =>
@@ -10,28 +10,20 @@ const page = (id: string) =>
 
 const transformOf = (el: HTMLElement) => (el.parentElement as HTMLElement).style.transform;
 
-describe("TransitionSeries", () => {
-  const tree = jsx(TransitionSeries, {
+describe("ClipSeries", () => {
+  const tree = jsx(ClipSeries, {
     layout: "none",
     children: [
-      jsx(
-        TransitionSeries.Sequence,
-        { durationInFrames: 30, layout: "none", children: page("a") },
-        "a",
-      ),
-      jsx(TransitionSeries.Transition, {
-        timing: linearTiming({ durationInFrames: 10 }),
+      jsx(ClipSeries.Clip, { durationInFrames: 30, layout: "none", children: page("a") }, "a"),
+      jsx(ClipSeries.Transition, {
+        timing: linear({ durationInFrames: 10 }),
         presentation: slide({ direction: "from-right" }),
       }),
-      jsx(
-        TransitionSeries.Sequence,
-        { durationInFrames: 30, layout: "none", children: page("b") },
-        "b",
-      ),
+      jsx(ClipSeries.Clip, { durationInFrames: 30, layout: "none", children: page("b") }, "b"),
     ],
   });
 
-  it("overlaps neighbouring sequences by the transition duration", async () => {
+  it("overlaps neighbouring clips by the transition duration", async () => {
     const { get, visible, renderFrame } = await render(tree);
     renderFrame(19);
     expect(visible("a")).toBe(true);
@@ -49,7 +41,7 @@ describe("TransitionSeries", () => {
     expect(visible("b")).toBe(false);
   });
 
-  it("slides both sequences during the overlap", async () => {
+  it("slides both clips during the overlap", async () => {
     const { get, renderFrame } = await render(tree);
     renderFrame(10);
     expect(transformOf(get("a"))).toBe("translateX(0%)");
@@ -60,23 +52,23 @@ describe("TransitionSeries", () => {
     expect(transformOf(get("b"))).toBe("translateX(0%)");
   });
 
-  it("nests exiting outside entering for a sequence between two transitions", async () => {
+  it("nests exiting outside entering for a clip between two transitions", async () => {
     const transition = (direction: "from-right" | "from-bottom") =>
-      jsx(TransitionSeries.Transition, {
-        timing: linearTiming({ durationInFrames: 10 }),
+      jsx(ClipSeries.Transition, {
+        timing: linear({ durationInFrames: 10 }),
         presentation: slide({ direction }),
       });
-    const sequence = (id: string, durationInFrames: number) =>
-      jsx(TransitionSeries.Sequence, { durationInFrames, layout: "none", children: page(id) }, id);
+    const clip = (id: string, durationInFrames: number) =>
+      jsx(ClipSeries.Clip, { durationInFrames, layout: "none", children: page(id) }, id);
     const { get, visible, renderFrame } = await render(
-      jsx(TransitionSeries, {
+      jsx(ClipSeries, {
         layout: "none",
         children: [
-          sequence("a", 30),
+          clip("a", 30),
           transition("from-right"),
-          sequence("b", 40),
+          clip("b", 40),
           transition("from-bottom"),
-          sequence("c", 30),
+          clip("c", 30),
         ],
       }),
     );
@@ -102,18 +94,18 @@ describe("TransitionSeries", () => {
     expect(get("c").textContent).toBe("10");
   });
 
-  it("starts a sequence at 0 when transitions outlast the sequences before it", async () => {
+  it("starts a clip at 0 when transitions outlast the clips before it", async () => {
     const { get, visible, renderFrame } = await render(
-      jsx(TransitionSeries, {
+      jsx(ClipSeries, {
         layout: "none",
         children: [
-          jsx(TransitionSeries.Sequence, {
+          jsx(ClipSeries.Clip, {
             durationInFrames: 5,
             layout: "none",
             children: page("a"),
           }),
-          jsx(TransitionSeries.Transition, { timing: linearTiming({ durationInFrames: 10 }) }),
-          jsx(TransitionSeries.Sequence, {
+          jsx(ClipSeries.Transition, { timing: linear({ durationInFrames: 10 }) }),
+          jsx(ClipSeries.Clip, {
             durationInFrames: 20,
             layout: "none",
             children: page("b"),
@@ -129,18 +121,18 @@ describe("TransitionSeries", () => {
   });
 });
 
-describe("linearTiming", () => {
+describe("linear", () => {
   it("clamps progress to [0, 1] and applies the easing", () => {
-    const timing = linearTiming({ durationInFrames: 10, easing: (t) => t * t });
+    const timing = linear({ durationInFrames: 10, easing: (t) => t * t });
     expect(timing.progress(5)).toBe(0.25);
     expect(timing.progress(-1)).toBe(0);
     expect(timing.progress(10)).toBe(1);
     expect(timing.progress(15)).toBe(1);
-    expect(linearTiming({ durationInFrames: 4 }).progress(1)).toBe(0.25);
+    expect(linear({ durationInFrames: 4 }).progress(1)).toBe(0.25);
   });
 
   it("treats a zero-length transition as finished", () => {
-    expect(linearTiming({ durationInFrames: 0 }).progress(0)).toBe(1);
+    expect(linear({ durationInFrames: 0 }).progress(0)).toBe(1);
   });
 });
 

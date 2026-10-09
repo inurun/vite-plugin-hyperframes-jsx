@@ -1,7 +1,7 @@
 export { FRAME_EPSILON, registerClock, requestRender, type Clock } from "./clock";
-export { createContext, useContext, type Context } from "./context";
+export { createContext, readContext, type Context } from "./context";
 export { applyStyle, type StyleObject } from "./dom";
-export { useElementSize, type Size } from "./element-size";
+export { measureElement, type Size } from "./measure-element";
 export {
   Fragment,
   jsx,
@@ -24,30 +24,30 @@ export {
   type MountedComposition,
   type MountFn,
 } from "./mount";
-export { ABSOLUTE_FILL, AbsoluteFill, type AbsoluteFillProps } from "./primitives/absolute-fill";
+export { FILL, Fill, type FillProps } from "./primitives/fill";
 export { Frame, type FrameAttrs, type FrameProps, type FrameTarget } from "./primitives/frame";
 export { Img, type ImgProps } from "./primitives/img";
 export { Loop, type LoopProps } from "./primitives/loop";
-export { Sequence, type SequenceProps } from "./primitives/sequence";
+export { Clip, type ClipProps } from "./primitives/clip";
 export { TimeShift, type TimeShiftProps } from "./primitives/time-shift";
 export {
-  linearTiming,
+  linear,
   slide,
-  TransitionSeries,
+  ClipSeries,
   type SlideDirection,
   type TransitionPresentation,
-  type TransitionSeriesSequenceProps,
-  type TransitionSeriesTransitionProps,
+  type ClipSeriesClipProps,
+  type ClipSeriesTransitionProps,
   type TransitionTiming,
-} from "./primitives/transition-series";
-export { staticFile } from "./static-file";
+} from "./primitives/clip-series";
+export { assetUrl } from "./asset-url";
 export {
   afterMounted,
   onMounted,
   registerPending,
   registerUpdater,
-  useSequenceTiming,
-  useVideoConfig,
+  getClipTiming,
+  getVideoConfig,
   type MountedCallback,
   type Updater,
   type VideoConfig,

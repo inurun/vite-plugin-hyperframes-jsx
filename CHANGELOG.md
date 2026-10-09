@@ -8,6 +8,21 @@ First release on npm.
 
 ### Breaking changes
 
+- Components and functions use their own names instead of Remotion's, and build-time functions no longer look like React hooks:
+
+  | 0.1                                              | 0.2                                    |
+  | ------------------------------------------------ | -------------------------------------- |
+  | `Sequence`, `SequenceProps`                      | `Clip`, `ClipProps`                    |
+  | `TransitionSeries` (`.Sequence` / `.Transition`) | `ClipSeries` (`.Clip` / `.Transition`) |
+  | `AbsoluteFill`, `ABSOLUTE_FILL`                  | `Fill`, `FILL`                         |
+  | `layout="absolute-fill"`                         | `layout="fill"`                        |
+  | `linearTiming()`                                 | `linear()`                             |
+  | `useVideoConfig()`                               | `getVideoConfig()`                     |
+  | `useSequenceTiming()`                            | `getClipTiming()`                      |
+  | `useElementSize()`                               | `measureElement()`                     |
+  | `useContext()`                                   | `readContext()`                        |
+  | `staticFile()` from `/static-file`               | `assetUrl()` from `/asset-url`         |
+
 - The Vite plugin is `hyperframesJsx()` (was `hyperframes()`).
 - `registerClock(compositionId, composition)` takes fps and duration from `composition.config` (was `registerClock(compositionId, composition, fps, durationInFrames)`).
 - `MountedComposition` is `{ config, renderFrame, dispose }`; `root` (the internal timing tree) is gone.
@@ -19,6 +34,7 @@ First release on npm.
 
 ### Added
 
+- A "Prior art" section in the README: the API is inspired by Remotion, independently implemented, with a table of equivalents.
 - `include` / `exclude` plugin options to scope the JSX runtime to some files.
 - `Clock.timeline`, `Clock.requestRender()` and `Clock.dispose()`; `MountedComposition.dispose()`. Registering a clock for an id that already has one disposes the old one; `requestRender()` re-renders every clock.
 - Exported prop types for every primitive, `HtmlProps`, `SvgProps`, `Updater`, `MountedCallback`, `CustomMount`.

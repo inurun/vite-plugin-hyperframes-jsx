@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
-import { useElementSize } from "../element-size";
+import { measureElement } from "../measure-element";
 import { jsx } from "../jsx-runtime";
 import { Frame } from "../primitives/frame";
 import { render } from "./render";
 
-describe("useElementSize", () => {
+describe("measureElement", () => {
   it("measures the element and its children after mounting", async () => {
     // happy-dom has no layout: an element's height comes from its data-h attribute.
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
@@ -15,7 +15,7 @@ describe("useElementSize", () => {
       },
     );
     const Reel = () => {
-      const { ref, size, childSizes } = useElementSize();
+      const { ref, size, childSizes } = measureElement();
       return jsx(Frame, {
         style: (frame: number) => ({ top: (size.height + childSizes[1]!.height) * (frame / 10) }),
         children: jsx("div", {

@@ -1,7 +1,7 @@
 import { defineMount } from "../mount";
-import { mountScoped, type SequenceProps } from "./sequence";
+import { mountScoped, type ClipProps } from "./clip";
 
-export type LoopProps = Omit<SequenceProps, "from" | "durationInFrames"> & {
+export type LoopProps = Omit<ClipProps, "from" | "durationInFrames"> & {
   /** Length of one iteration. Children see it as their duration. */
   durationInFrames: number;
   /** Number of iterations (default: until the parent ends). */

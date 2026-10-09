@@ -1,5 +1,5 @@
-import { AbsoluteFill } from "@inurun/vite-plugin-hyperframes-jsx/runtime";
+import { Fill } from "@inurun/vite-plugin-hyperframes-jsx/runtime";
 
 export function Video() {
-  return <AbsoluteFill data-testid="video">hello</AbsoluteFill>;
+  return <Fill data-testid="video">hello</Fill>;
 }

@@ -6,7 +6,7 @@ export type ScopeNode = {
   /** Absolute start frame on the composition timeline. */
   from: number;
   durationInFrames: number;
-  /** When set, children see `(frame - from) % loop` (a looping sequence). */
+  /** When set, children see `(frame - from) % loop` (a looping clip). */
   loop: number | null;
   /** Descendants are evaluated at `frame - timeOffset` (fractional allowed). */
   timeOffset: number | ((localFrame: number) => number);
@@ -138,11 +138,11 @@ export function afterMounted(callback: MountedCallback) {
 }
 
 /**
- * The video config, with `durationInFrames` of the enclosing `Sequence` (or the loop length
+ * The video config, with `durationInFrames` of the enclosing `Clip` (or the loop length
  * inside a `Loop`).
  */
-export function useVideoConfig(): VideoConfig {
-  const { config, scope } = getBuildState("useVideoConfig()");
+export function getVideoConfig(): VideoConfig {
+  const { config, scope } = getBuildState("getVideoConfig()");
   return {
     fps: config.fps,
     width: config.width,
@@ -152,8 +152,8 @@ export function useVideoConfig(): VideoConfig {
 }
 
 /** The current scope's absolute start frame on the composition timeline and its duration. */
-export function useSequenceTiming(): { fromFrame: number; durationInFrames: number } {
-  const { scope } = getBuildState("useSequenceTiming()");
+export function getClipTiming(): { fromFrame: number; durationInFrames: number } {
+  const { scope } = getBuildState("getClipTiming()");
   return { fromFrame: scope.from, durationInFrames: scope.durationInFrames };
 }
 

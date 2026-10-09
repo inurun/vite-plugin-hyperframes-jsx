@@ -2,30 +2,30 @@ import { HTML_NS, SVG_NS, type StyleObject } from "../dom";
 import type { HfNode } from "../jsx-runtime";
 import { defineMount, mount, mountHost, type MountContext } from "../mount";
 import { createScope, getBuildState, withScope } from "../scope";
-import { ABSOLUTE_FILL } from "./absolute-fill";
+import { FILL } from "./fill";
 
-export type SequenceProps = {
+export type ClipProps = {
   /** Start frame relative to the parent (default 0). */
   from?: number;
   /** Visible length in frames (default: until the parent ends). */
   durationInFrames?: number;
-  /** `absolute-fill` (default) wraps children in an `AbsoluteFill` div; `none` adds no box. */
-  layout?: "none" | "absolute-fill";
+  /** `fill` (default) wraps children in a `Fill` div; `none` adds no box. */
+  layout?: "none" | "fill";
   className?: string;
   style?: StyleObject;
   children?: HfNode;
 };
 
 /** @internal */
-export function mountScoped(props: SequenceProps, ctx: MountContext, loop: number | null) {
+export function mountScoped(props: ClipProps, ctx: MountContext, loop: number | null) {
   const parent = getBuildState().scope;
   const from = props.from ?? 0;
   if (!Number.isFinite(from)) {
-    throw new RangeError(`<Sequence> from must be a finite number, got ${from}.`);
+    throw new RangeError(`<Clip> from must be a finite number, got ${from}.`);
   }
   if (Number.isNaN(props.durationInFrames) || (props.durationInFrames ?? 0) < 0) {
     throw new RangeError(
-      `<Sequence> durationInFrames must not be negative, got ${props.durationInFrames}.`,
+      `<Clip> durationInFrames must not be negative, got ${props.durationInFrames}.`,
     );
   }
   const duration = Math.max(
@@ -38,7 +38,7 @@ export function mountScoped(props: SequenceProps, ctx: MountContext, loop: numbe
     isSvg ? "g" : "div",
     layoutNone
       ? { style: isSvg ? undefined : { display: "contents" } }
-      : { className: props.className, style: { ...ABSOLUTE_FILL, ...props.style } },
+      : { className: props.className, style: { ...FILL, ...props.style } },
     ctx,
   ) as HTMLElement;
   const scope = createScope(parent.from + from, duration, wrapper, wrapper.style.display);
@@ -52,4 +52,4 @@ export function mountScoped(props: SequenceProps, ctx: MountContext, loop: numbe
 }
 
 /** Shows its children from `from` for `durationInFrames`; children see frames from 0. */
-export const Sequence = defineMount<SequenceProps>((props, ctx) => mountScoped(props, ctx, null));
+export const Clip = defineMount<ClipProps>((props, ctx) => mountScoped(props, ctx, null));

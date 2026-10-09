@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { createContext, useContext } from "../context";
+import { createContext, readContext } from "../context";
 import { Fragment, jsx } from "../jsx-runtime";
 import { render } from "./render";
 
@@ -52,7 +52,7 @@ describe("mount", () => {
   it("resolves the nearest context provider", async () => {
     const Theme = createContext("default");
     const Label = ({ id }: { id: string }) =>
-      jsx("span", { "data-testid": id, children: useContext(Theme) });
+      jsx("span", { "data-testid": id, children: readContext(Theme) });
     const { get } = await render([
       jsx(Label, { id: "outside" }),
       jsx(Theme.Provider, {

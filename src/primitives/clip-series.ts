@@ -1,8 +1,8 @@
 import type { StyleObject } from "../dom";
 import { Fragment, jsx, type HfElement, type HfNode } from "../jsx-runtime";
-import { ABSOLUTE_FILL } from "./absolute-fill";
+import { FILL } from "./fill";
 import { Frame } from "./frame";
-import { Sequence, type SequenceProps } from "./sequence";
+import { Clip, type ClipProps } from "./clip";
 
 /** How long a transition lasts and how its progress grows. */
 export type TransitionTiming = {
@@ -17,7 +17,7 @@ export type TransitionPresentation = {
 };
 
 /** Progress grows linearly over `durationInFrames`, optionally reshaped by `easing`. */
-export function linearTiming({
+export function linear({
   durationInFrames,
   easing = (t) => t,
 }: {
@@ -55,25 +55,25 @@ export function slide({
   };
 }
 
-export type TransitionSeriesSequenceProps = Omit<SequenceProps, "from"> & {
+export type ClipSeriesClipProps = Omit<ClipProps, "from"> & {
   durationInFrames: number;
 };
 
-export type TransitionSeriesTransitionProps = {
+export type ClipSeriesTransitionProps = {
   timing: TransitionTiming;
   /** How both sides are styled while the transition runs (default `slide()`). */
   presentation?: TransitionPresentation;
 };
 
-type SeriesSequenceProps = TransitionSeriesSequenceProps;
-type SeriesTransitionProps = TransitionSeriesTransitionProps;
+type SeriesClipProps = ClipSeriesClipProps;
+type SeriesTransitionProps = ClipSeriesTransitionProps;
 
-function SeriesSequence(_props: SeriesSequenceProps): HfNode {
-  throw new Error("<TransitionSeries.Sequence> must be a child of <TransitionSeries>.");
+function SeriesClip(_props: SeriesClipProps): HfNode {
+  throw new Error("<ClipSeries.Clip> must be a child of <ClipSeries>.");
 }
 
 function SeriesTransition(_props: SeriesTransitionProps): HfNode {
-  throw new Error("<TransitionSeries.Transition> must be a child of <TransitionSeries>.");
+  throw new Error("<ClipSeries.Transition> must be a child of <ClipSeries>.");
 }
 
 function flatten(node: unknown, out: HfElement[] = []): HfElement[] {
@@ -89,7 +89,7 @@ function flatten(node: unknown, out: HfElement[] = []): HfElement[] {
       out.push(element);
     }
   } else if (typeof node === "string" && node.trim() !== "") {
-    throw new TypeError(`<TransitionSeries> only accepts Sequence / Transition, got "${node}".`);
+    throw new TypeError(`<ClipSeries> only accepts Clip / Transition, got "${node}".`);
   }
   return out;
 }
@@ -106,7 +106,7 @@ function presented(
   children: HfNode,
 ) {
   const presentation = transition.presentation ?? slide();
-  const base = { ...ABSOLUTE_FILL, justifyContent: "center", alignItems: "center" };
+  const base = { ...FILL, justifyContent: "center", alignItems: "center" };
   return jsx(Frame, {
     style: (frame: number) => ({
       ...base,
@@ -117,13 +117,13 @@ function presented(
 }
 
 /**
- * Plays sequences back to back. A transition overlaps its two neighbours by its duration:
- * each sequence starts at the previous sequence durations minus the previous transition
+ * Plays clips back to back. A transition overlaps its two neighbours by its duration:
+ * each clip starts at the previous clip durations minus the previous transition
  * durations (never before 0).
  */
-function TransitionSeriesRoot({ children, ...sequenceProps }: SequenceProps) {
+function ClipSeriesRoot({ children, ...clipProps }: ClipProps) {
   const items = flatten(children);
-  const sequences: HfElement[] = [];
+  const clips: HfElement[] = [];
   let cursor = 0;
   for (const [index, item] of items.entries()) {
     const transition = transitionProps(item);
@@ -131,31 +131,29 @@ function TransitionSeriesRoot({ children, ...sequenceProps }: SequenceProps) {
       const duration = transition.timing.durationInFrames;
       if (!Number.isFinite(duration) || duration < 0) {
         throw new RangeError(
-          `<TransitionSeries.Transition> durationInFrames must be a non-negative number, got ${duration}.`,
+          `<ClipSeries.Transition> durationInFrames must be a non-negative number, got ${duration}.`,
         );
       }
-      if (items[index - 1]?.type !== SeriesSequence || items[index + 1]?.type !== SeriesSequence) {
-        throw new TypeError(
-          "<TransitionSeries.Transition> must sit between two <TransitionSeries.Sequence>.",
-        );
+      if (items[index - 1]?.type !== SeriesClip || items[index + 1]?.type !== SeriesClip) {
+        throw new TypeError("<ClipSeries.Transition> must sit between two <ClipSeries.Clip>.");
       }
       cursor -= duration;
       continue;
     }
-    if (item.type !== SeriesSequence) {
-      throw new TypeError("<TransitionSeries> only accepts Sequence / Transition children.");
+    if (item.type !== SeriesClip) {
+      throw new TypeError("<ClipSeries> only accepts Clip / Transition children.");
     }
-    const { durationInFrames, children: content, ...props } = item.props as SeriesSequenceProps;
+    const { durationInFrames, children: content, ...props } = item.props as SeriesClipProps;
     if (!Number.isFinite(durationInFrames) || durationInFrames <= 0) {
       throw new RangeError(
-        `<TransitionSeries.Sequence> durationInFrames must be a positive number, got ${durationInFrames}.`,
+        `<ClipSeries.Clip> durationInFrames must be a positive number, got ${durationInFrames}.`,
       );
     }
     const from = Math.max(0, cursor);
     cursor = from + durationInFrames;
     const entering = transitionProps(items[index - 1]);
     const exiting = transitionProps(items[index + 1]);
-    // The entering transition starts with the sequence, the exiting one ends with it.
+    // The entering transition starts with the clip, the exiting one ends with it.
     let body: HfNode = content;
     if (entering) {
       body = presented(entering, "entering", (frame) => frame, body);
@@ -164,13 +162,13 @@ function TransitionSeriesRoot({ children, ...sequenceProps }: SequenceProps) {
       const exitStart = durationInFrames - exiting.timing.durationInFrames;
       body = presented(exiting, "exiting", (frame) => frame - exitStart, body);
     }
-    sequences.push(jsx(Sequence, { ...props, from, durationInFrames, children: body }, item.key));
+    clips.push(jsx(Clip, { ...props, from, durationInFrames, children: body }, item.key));
   }
-  return jsx(Sequence, { ...sequenceProps, children: sequences });
+  return jsx(Clip, { ...clipProps, children: clips });
 }
 
-/** `Sequence`s played back to back, overlapped by the `Transition`s between them. */
-export const TransitionSeries = Object.assign(TransitionSeriesRoot, {
-  Sequence: SeriesSequence,
+/** `Clip`s played back to back, overlapped by the `Transition`s between them. */
+export const ClipSeries = Object.assign(ClipSeriesRoot, {
+  Clip: SeriesClip,
   Transition: SeriesTransition,
 });

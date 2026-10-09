@@ -15,13 +15,13 @@ export type MountContext = { parent: Element; ns: string };
 /** Mounts `props` into `ctx.parent`. Runs once, while the tree mounts. */
 export type MountFn<P> = (props: P, ctx: MountContext) => void;
 
-/** Components that take over mounting (Sequence, Frame, Img...). */
+/** Components that take over mounting (Clip, Frame, Img...). */
 export type CustomMount<P = Record<string, unknown>> = { $$hfMount: MountFn<P> };
 
 type ProviderMarker = { $$hfProvider: object };
 
 /**
- * Low-level: defines a component that mounts its own DOM (as `Sequence`, `Frame` and `Img`
+ * Low-level: defines a component that mounts its own DOM (as `Clip`, `Frame` and `Img`
  * do) instead of returning a tree. Typed as a function component so it is usable as a JSX
  * tag; never called directly.
  */

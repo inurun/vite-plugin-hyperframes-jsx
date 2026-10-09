@@ -1,17 +1,17 @@
 import {
-  AbsoluteFill,
+  Fill,
   Frame,
-  linearTiming,
+  linear,
   slide,
-  TransitionSeries,
-  useVideoConfig,
+  ClipSeries,
+  getVideoConfig,
 } from "@inurun/vite-plugin-hyperframes-jsx/runtime";
 
 function Title({ text, background }: { text: string; background: string }) {
   // Runs once. Read the config here; compute frame values in updaters.
-  const { durationInFrames } = useVideoConfig();
+  const { durationInFrames } = getVideoConfig();
   return (
-    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", background }}>
+    <Fill style={{ justifyContent: "center", alignItems: "center", background }}>
       <Frame
         as="h1"
         style={(frame) => ({
@@ -23,23 +23,23 @@ function Title({ text, background }: { text: string; background: string }) {
         })}
         text={(frame) => `${text} ${durationInFrames - frame}`}
       />
-    </AbsoluteFill>
+    </Fill>
   );
 }
 
 export function Video() {
   return (
-    <TransitionSeries>
-      <TransitionSeries.Sequence durationInFrames={90}>
+    <ClipSeries>
+      <ClipSeries.Clip durationInFrames={90}>
         <Title text="Hello" background="#1d4ed8" />
-      </TransitionSeries.Sequence>
-      <TransitionSeries.Transition
-        timing={linearTiming({ durationInFrames: 20 })}
+      </ClipSeries.Clip>
+      <ClipSeries.Transition
+        timing={linear({ durationInFrames: 20 })}
         presentation={slide({ direction: "from-right" })}
       />
-      <TransitionSeries.Sequence durationInFrames={90}>
+      <ClipSeries.Clip durationInFrames={90}>
         <Title text="World" background="#be123c" />
-      </TransitionSeries.Sequence>
-    </TransitionSeries>
+      </ClipSeries.Clip>
+    </ClipSeries>
   );
 }
