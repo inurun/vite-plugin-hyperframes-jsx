@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1280, height=720" />
+    <title>Basic composition</title>
+    <style>
+      body {
+        margin: 0;
+        background: #111;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- data-duration is in seconds: 160 frames at 30 fps. -->
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-width="1280"
+      data-height="720"
+      data-fps="30"
+      data-duration="5.333333"
+    ></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
