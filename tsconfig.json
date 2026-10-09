@@ -9,7 +9,13 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "isolatedModules": true,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@inurun/vite-plugin-hyperframes-jsx",
+    "paths": {
+      "@inurun/vite-plugin-hyperframes-jsx/*": ["./src/*.ts"]
+    }
   },
   "include": ["src", "tsdown.config.ts", "vitest.config.ts"]
 }

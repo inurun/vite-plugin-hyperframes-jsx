@@ -4,12 +4,14 @@ import { ABSOLUTE_FILL } from "./absolute-fill";
 import { Frame } from "./frame";
 import { Sequence, type SequenceProps } from "./sequence";
 
+/** How long a transition lasts and how its progress grows. */
 export type TransitionTiming = {
   durationInFrames: number;
   /** Transition-local frame → progress in [0, 1]. */
   progress: (frame: number) => number;
 };
 
+/** Styles the wrapper of each side of a transition from its progress in [0, 1]. */
 export type TransitionPresentation = {
   style: (progress: number, side: "entering" | "exiting") => StyleObject;
 };
@@ -53,12 +55,18 @@ export function slide({
   };
 }
 
-type SeriesSequenceProps = Omit<SequenceProps, "from"> & { durationInFrames: number };
+export type TransitionSeriesSequenceProps = Omit<SequenceProps, "from"> & {
+  durationInFrames: number;
+};
 
-type SeriesTransitionProps = {
+export type TransitionSeriesTransitionProps = {
   timing: TransitionTiming;
+  /** How both sides are styled while the transition runs (default `slide()`). */
   presentation?: TransitionPresentation;
 };
+
+type SeriesSequenceProps = TransitionSeriesSequenceProps;
+type SeriesTransitionProps = TransitionSeriesTransitionProps;
 
 function SeriesSequence(_props: SeriesSequenceProps): HfNode {
   throw new Error("<TransitionSeries.Sequence> must be a child of <TransitionSeries>.");
@@ -120,13 +128,29 @@ function TransitionSeriesRoot({ children, ...sequenceProps }: SequenceProps) {
   for (const [index, item] of items.entries()) {
     const transition = transitionProps(item);
     if (transition) {
-      cursor -= transition.timing.durationInFrames;
+      const duration = transition.timing.durationInFrames;
+      if (!Number.isFinite(duration) || duration < 0) {
+        throw new RangeError(
+          `<TransitionSeries.Transition> durationInFrames must be a non-negative number, got ${duration}.`,
+        );
+      }
+      if (items[index - 1]?.type !== SeriesSequence || items[index + 1]?.type !== SeriesSequence) {
+        throw new TypeError(
+          "<TransitionSeries.Transition> must sit between two <TransitionSeries.Sequence>.",
+        );
+      }
+      cursor -= duration;
       continue;
     }
     if (item.type !== SeriesSequence) {
       throw new TypeError("<TransitionSeries> only accepts Sequence / Transition children.");
     }
     const { durationInFrames, children: content, ...props } = item.props as SeriesSequenceProps;
+    if (!Number.isFinite(durationInFrames) || durationInFrames <= 0) {
+      throw new RangeError(
+        `<TransitionSeries.Sequence> durationInFrames must be a positive number, got ${durationInFrames}.`,
+      );
+    }
     const from = Math.max(0, cursor);
     cursor = from + durationInFrames;
     const entering = transitionProps(items[index - 1]);
@@ -145,6 +169,7 @@ function TransitionSeriesRoot({ children, ...sequenceProps }: SequenceProps) {
   return jsx(Sequence, { ...sequenceProps, children: sequences });
 }
 
+/** `Sequence`s played back to back, overlapped by the `Transition`s between them. */
 export const TransitionSeries = Object.assign(TransitionSeriesRoot, {
   Sequence: SeriesSequence,
   Transition: SeriesTransition,

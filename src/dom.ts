@@ -1,3 +1,6 @@
+import type * as CSS from "csstype";
+
+/** @internal */
 export const SVG_NS = "http://www.w3.org/2000/svg";
 export const HTML_NS = "http://www.w3.org/1999/xhtml";
 
@@ -88,6 +91,16 @@ const SVG_CAMEL_ATTRS = new Set([
   "repeatCount",
   "xChannelSelector",
   "yChannelSelector",
+  "pointsAtX",
+  "pointsAtY",
+  "pointsAtZ",
+  "limitingConeAngle",
+  "targetX",
+  "targetY",
+  "preserveAlpha",
+  "kernelUnitLength",
+  "requiredExtensions",
+  "systemLanguage",
 ]);
 
 const SKIP_PROPS = new Set(["children", "key", "ref", "dangerouslySetInnerHTML", "style"]);
@@ -100,28 +113,45 @@ function cssName(key: string) {
   if (key.startsWith("--")) {
     return key;
   }
-  if (/^(Webkit|Moz|ms)[A-Z]/.test(key)) {
+  if (VENDOR_PREFIX.test(key)) {
     return `-${toKebab(key).replace(/^-/, "")}`;
   }
   return toKebab(key);
 }
 
+const VENDOR_PREFIX = /^(Webkit|Moz|ms)([A-Z])/;
+
+function isUnitless(key: string) {
+  // `WebkitLineClamp` is unitless like `lineClamp`.
+  return UNITLESS.has(
+    key.replace(VENDOR_PREFIX, (_, _prefix, first: string) => first.toLowerCase()),
+  );
+}
+
 function cssValue(key: string, value: unknown) {
-  if (typeof value === "number" && value !== 0 && !UNITLESS.has(key) && !key.startsWith("--")) {
+  if (typeof value === "number" && value !== 0 && !isUnitless(key) && !key.startsWith("--")) {
     return `${value}px`;
   }
   return String(value);
 }
 
-export type StyleObject = Record<string, unknown>;
+/**
+ * A React-style style object: camelCase properties, numbers in px unless unitless, custom
+ * properties (`--name`) as is. `null`, `undefined` and `false` values are skipped.
+ */
+export type StyleObject = CSS.Properties<string | number> & {
+  [property: `--${string}`]: string | number | undefined;
+};
 
 /** Applies a React-style style object, removing keys that disappeared since `previous`. */
 export function applyStyle(
   el: HTMLElement | SVGElement,
-  next: StyleObject | undefined,
-  previous?: StyleObject,
+  nextStyle: StyleObject | undefined,
+  previousStyle?: StyleObject,
 ) {
   const style = el.style;
+  const next = nextStyle as Record<string, unknown> | undefined;
+  const previous = previousStyle as Record<string, unknown> | undefined;
   if (previous) {
     for (const key of Object.keys(previous)) {
       if (!next || next[key] == null || next[key] === false) {
@@ -143,12 +173,21 @@ export function applyStyle(
   }
 }
 
+/** @internal */
 export function applyProps(el: Element, props: Record<string, unknown>, isSvg: boolean) {
   for (const [key, value] of Object.entries(props)) {
-    if (SKIP_PROPS.has(key) || value == null || value === false) {
+    if (SKIP_PROPS.has(key) || value == null) {
       continue;
     }
     if (/^on[A-Z]/.test(key) || typeof value === "function") {
+      continue;
+    }
+    if (key.startsWith("data-") || key.startsWith("aria-")) {
+      // As React: booleans are stringified ("true" / "false"), not boolean attributes.
+      el.setAttribute(key, String(value));
+      continue;
+    }
+    if (value === false) {
       continue;
     }
     let name: string;
@@ -156,8 +195,6 @@ export function applyProps(el: Element, props: Record<string, unknown>, isSvg: b
       name = "class";
     } else if (key === "htmlFor") {
       name = "for";
-    } else if (key.startsWith("data-") || key.startsWith("aria-")) {
-      name = key;
     } else if (isSvg) {
       name = key === "xlinkHref" ? "href" : SVG_CAMEL_ATTRS.has(key) ? key : toKebab(key);
     } else {
@@ -170,7 +207,7 @@ export function applyProps(el: Element, props: Record<string, unknown>, isSvg: b
     // As authored (e.g. parsed HTML).
     el.setAttribute("style", style);
   } else if (style) {
-    applyStyle(el as HTMLElement, style as StyleObject);
+    applyStyle(el as HTMLElement | SVGElement, style as StyleObject);
   }
   const inner = props["dangerouslySetInnerHTML"] as { __html?: string } | undefined;
   if (inner?.__html != null) {

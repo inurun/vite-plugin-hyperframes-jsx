@@ -1,3 +1,4 @@
+import type { HfNode } from "../jsx-runtime";
 import { mountComposition } from "../mount";
 
 // happy-dom has no FontFaceSet.
@@ -5,7 +6,7 @@ if (!document.fonts) {
   Object.defineProperty(document, "fonts", { value: { ready: Promise.resolve() } });
 }
 
-export async function render(tree: unknown, durationInFrames = 100) {
+export async function render(tree: HfNode, durationInFrames = 100) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const composition = await mountComposition(tree, container, {

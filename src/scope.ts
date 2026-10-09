@@ -1,5 +1,7 @@
+/** Called with the scope-local frame on every rendered frame while its scope is visible. */
 export type Updater = (localFrame: number) => void;
 
+/** @internal The timing tree evaluated on every frame. */
 export type ScopeNode = {
   /** Absolute start frame on the composition timeline. */
   from: number;
@@ -22,6 +24,7 @@ export type VideoConfig = {
   durationInFrames: number;
 };
 
+/** Runs once after mounting; a returned promise is awaited. */
 export type MountedCallback = () => unknown;
 
 type BuildState = {
@@ -33,19 +36,46 @@ type BuildState = {
   contexts: Map<object, unknown[]>;
 };
 
-let state: BuildState | null = null;
+// Kept on globalThis so that two copies of this module (e.g. a pre-bundled one) share it.
+const STATE_KEY = Symbol.for("hf.buildState");
+const holder = globalThis as { [STATE_KEY]?: BuildState | null };
 
-export function getBuildState(): BuildState {
+/** @internal */
+export function getBuildState(caller = "This function"): BuildState {
+  const state = holder[STATE_KEY];
   if (!state) {
-    throw new Error("HyperFrames build state is not initialised.");
+    throw new Error(
+      `${caller} can only be called while mountComposition() mounts the tree (in a component ` +
+        "body), not in updaters or onMounted / afterMounted callbacks.",
+    );
   }
   return state;
 }
 
+/** @internal */
 export function setBuildState(next: BuildState | null) {
-  state = next;
+  holder[STATE_KEY] = next;
 }
 
+function isPositive(value: number) {
+  return Number.isFinite(value) && value > 0;
+}
+
+/** @internal Throws a descriptive error for an unusable video config. */
+export function assertVideoConfig(config: VideoConfig) {
+  const { fps, width, height, durationInFrames } = config;
+  if (!isPositive(fps)) {
+    throw new RangeError(`fps must be a positive number, got ${fps}.`);
+  }
+  if (!isPositive(width) || !isPositive(height)) {
+    throw new RangeError(`width and height must be positive numbers, got ${width} × ${height}.`);
+  }
+  if (!Number.isInteger(durationInFrames) || durationInFrames <= 0) {
+    throw new RangeError(`durationInFrames must be a positive integer, got ${durationInFrames}.`);
+  }
+}
+
+/** @internal */
 export function createScope(
   from: number,
   durationInFrames: number,
@@ -65,6 +95,7 @@ export function createScope(
   };
 }
 
+/** @internal */
 export function withScope<T>(scope: ScopeNode, fn: () => T): T {
   const build = getBuildState();
   const previous = build.scope;
@@ -77,12 +108,17 @@ export function withScope<T>(scope: ScopeNode, fn: () => T): T {
   }
 }
 
+/**
+ * Registers a frame-pure function on the current scope. It is called with the scope-local
+ * frame whenever the scope is visible; it must derive everything from that frame.
+ */
 export function registerUpdater(updater: Updater) {
-  getBuildState().scope.updaters.push(updater);
+  getBuildState("registerUpdater()").scope.updaters.push(updater);
 }
 
+/** Delays `mountComposition` (and so the clock) until `promise` settles. */
 export function registerPending(promise: Promise<unknown>) {
-  getBuildState().pending.push(promise);
+  getBuildState("registerPending()").pending.push(promise);
 }
 
 /**
@@ -90,7 +126,7 @@ export function registerPending(promise: Promise<unknown>) {
  * clock registers. Callbacks run sequentially; returned promises are awaited.
  */
 export function onMounted(callback: MountedCallback) {
-  getBuildState().mounted.push(callback);
+  getBuildState("onMounted()").mounted.push(callback);
 }
 
 /**
@@ -98,11 +134,15 @@ export function onMounted(callback: MountedCallback) {
  * measured there). Callbacks run in parallel; returned promises are awaited.
  */
 export function afterMounted(callback: MountedCallback) {
-  getBuildState().afterMounted.push(callback);
+  getBuildState("afterMounted()").afterMounted.push(callback);
 }
 
+/**
+ * The video config, with `durationInFrames` of the enclosing `Sequence` (or the loop length
+ * inside a `Loop`).
+ */
 export function useVideoConfig(): VideoConfig {
-  const { config, scope } = getBuildState();
+  const { config, scope } = getBuildState("useVideoConfig()");
   return {
     fps: config.fps,
     width: config.width,
@@ -112,8 +152,8 @@ export function useVideoConfig(): VideoConfig {
 }
 
 /** The current scope's absolute start frame on the composition timeline and its duration. */
-export function useSequenceTiming() {
-  const { scope } = getBuildState();
+export function useSequenceTiming(): { fromFrame: number; durationInFrames: number } {
+  const { scope } = getBuildState("useSequenceTiming()");
   return { fromFrame: scope.from, durationInFrames: scope.durationInFrames };
 }
 
@@ -140,6 +180,7 @@ function visit(node: ScopeNode, frame: number) {
   }
 }
 
+/** @internal */
 export function renderFrame(root: ScopeNode, frame: number) {
   visit(root, frame);
 }

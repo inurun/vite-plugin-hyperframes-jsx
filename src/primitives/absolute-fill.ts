@@ -1,6 +1,7 @@
 import type { StyleObject } from "../dom";
-import { jsx, type HfNode } from "../jsx-runtime";
+import { jsx, type HfNode, type HtmlProps } from "../jsx-runtime";
 
+/** The style of `AbsoluteFill`: a full-size, absolutely positioned flex column. */
 export const ABSOLUTE_FILL: StyleObject = {
   position: "absolute",
   top: "0px",
@@ -13,14 +14,9 @@ export const ABSOLUTE_FILL: StyleObject = {
   flexDirection: "column",
 };
 
-export function AbsoluteFill({
-  style,
-  ...props
-}: {
-  style?: StyleObject;
-  className?: string;
-  children?: HfNode;
-  [attr: string]: unknown;
-}) {
+export type AbsoluteFillProps = Omit<HtmlProps<"div">, "style"> & { style?: StyleObject };
+
+/** A `div` filling its positioned parent; `style` is merged over `ABSOLUTE_FILL`. */
+export function AbsoluteFill({ style, ...props }: AbsoluteFillProps): HfNode {
   return jsx("div", { ...props, style: { ...ABSOLUTE_FILL, ...style } });
 }

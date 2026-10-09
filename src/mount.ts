@@ -1,24 +1,30 @@
 import { applyProps, HTML_NS, SVG_NS } from "./dom";
 import { Fragment, type HfElement, type HfNode } from "./jsx-runtime";
 import {
+  assertVideoConfig,
   createScope,
   getBuildState,
   renderFrame,
   setBuildState,
-  type ScopeNode,
   type VideoConfig,
 } from "./scope";
 
+/** Where a custom-mount component appends its nodes, and the namespace to create them in. */
 export type MountContext = { parent: Element; ns: string };
 
-type MountFn<P> = (props: P, ctx: MountContext) => void;
+/** Mounts `props` into `ctx.parent`. Runs once, while the tree mounts. */
+export type MountFn<P> = (props: P, ctx: MountContext) => void;
 
 /** Components that take over mounting (Sequence, Frame, Img...). */
 export type CustomMount<P = Record<string, unknown>> = { $$hfMount: MountFn<P> };
 
-export type ProviderMarker = { $$hfProvider: object };
+type ProviderMarker = { $$hfProvider: object };
 
-/** Typed as a function component so it is usable as a JSX tag; never called directly. */
+/**
+ * Low-level: defines a component that mounts its own DOM (as `Sequence`, `Frame` and `Img`
+ * do) instead of returning a tree. Typed as a function component so it is usable as a JSX
+ * tag; never called directly.
+ */
 export function defineMount<P>(mountFn: MountFn<P>): ((props: P) => HfNode) & CustomMount<P> {
   const component = () => {
     throw new Error("Custom-mount components are mounted by the runtime.");
@@ -30,6 +36,7 @@ function isElement(node: unknown): node is HfElement {
   return typeof node === "object" && node !== null && (node as HfElement).$$hf === true;
 }
 
+/** Low-level: mounts any node (element, text, array...) into `ctx.parent`. */
 export function mount(node: unknown, ctx: MountContext): void {
   if (node == null || typeof node === "boolean") {
     return;
@@ -84,6 +91,7 @@ export function mount(node: unknown, ctx: MountContext): void {
   throw new Error(`Unsupported element type: ${String(type)}`);
 }
 
+/** Low-level: creates the host element `type`, applies `props`, mounts children and the ref. */
 export function mountHost(
   type: string,
   props: Record<string, unknown>,
@@ -106,6 +114,7 @@ export function mountHost(
   return el;
 }
 
+/** @internal */
 export function getContextStack(context: object): unknown[] {
   const contexts = getBuildState().contexts;
   let stack = contexts.get(context);
@@ -117,8 +126,11 @@ export function getContextStack(context: object): unknown[] {
 }
 
 export type MountedComposition = {
-  root: ScopeNode;
+  config: VideoConfig;
+  /** Applies the DOM state of `frame` (an integer frame on the composition timeline). */
   renderFrame: (frame: number) => void;
+  /** Removes the mounted nodes from the container. */
+  dispose: () => void;
 };
 
 /**
@@ -127,10 +139,11 @@ export type MountedComposition = {
  * register the HF timeline.
  */
 export async function mountComposition(
-  tree: unknown,
+  tree: HfNode,
   container: HTMLElement,
   config: VideoConfig,
 ): Promise<MountedComposition> {
+  assertVideoConfig(config);
   const root = createScope(0, config.durationInFrames, null, "");
   const state = {
     config,
@@ -140,16 +153,30 @@ export async function mountComposition(
     afterMounted: [] as (() => unknown)[],
     contexts: new Map<object, unknown[]>(),
   };
+  const before = container.lastChild;
   setBuildState(state);
   try {
     mount(tree, { parent: container, ns: HTML_NS });
   } finally {
     setBuildState(null);
   }
+  const nodes: ChildNode[] = [];
+  for (let node = before ? before.nextSibling : container.firstChild; node; ) {
+    nodes.push(node);
+    node = node.nextSibling;
+  }
   await Promise.all([...state.pending, document.fonts.ready]);
   for (const callback of state.mounted) {
     await callback();
   }
   await Promise.all(state.afterMounted.map((callback) => callback()));
-  return { root, renderFrame: (frame) => renderFrame(root, frame) };
+  return {
+    config,
+    renderFrame: (frame) => renderFrame(root, frame),
+    dispose: () => {
+      for (const node of nodes) {
+        node.remove();
+      }
+    },
+  };
 }
