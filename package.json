@@ -1,6 +1,6 @@
 {
   "name": "@inurun/vite-plugin-hyperframes-jsx",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Build-once JSX for HyperFrames compositions, as a Vite plugin and a tiny DOM runtime",
   "keywords": [
     "animation",
@@ -20,7 +20,8 @@
     "url": "git+https://github.com/inurun/vite-plugin-hyperframes-jsx.git"
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "type": "module",
   "sideEffects": false,

@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # format, lint, types, tests, build, publint and attw
+      - run: pnpm check
+
+  test-node:
+    # The oldest Node versions in `engines`. pnpm itself needs a newer Node, so install with
+    # Node 24 and run the tests on the older one.
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ["20.19", "22.12"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+      - run: node --version && ./node_modules/.bin/vitest run
+
+  render:
+    # Renders examples/basic with the HyperFrames CLI and checks the frames.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm render
+        working-directory: examples/basic
+        env:
+          HYPERFRAMES_TELEMETRY_DISABLED: "1"
+      - run: pnpm check:render
+        working-directory: examples/basic
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: basic-render
+          path: examples/basic/renders
+          if-no-files-found: ignore
