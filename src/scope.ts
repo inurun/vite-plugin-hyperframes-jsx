@@ -1,27 +1,17 @@
-/** Called with the scope-local frame on every rendered frame while its scope is visible. */
-export type Updater = (localFrame: number) => void;
-
-/** @internal The timing tree evaluated on every frame. */
-export type ScopeNode = {
-  /** Absolute start frame on the composition timeline. */
-  from: number;
-  durationInFrames: number;
-  /** When set, children see `(frame - from) % loop` (a looping clip). */
-  loop: number | null;
-  /** Descendants are evaluated at `frame - timeOffset` (fractional allowed). */
-  timeOffset: number | ((localFrame: number) => number);
-  wrapper: HTMLElement | SVGElement | null;
-  display: string;
-  updaters: Updater[];
-  children: ScopeNode[];
-  mounted: boolean | null;
-};
-
+/** The composition settings, read from the `data-*` attributes of its root element. */
 export type VideoConfig = {
   fps: number;
   width: number;
   height: number;
-  durationInFrames: number;
+  /** In seconds. */
+  duration: number;
+};
+
+/** Where the enclosing `Clip` sits on the composition timeline, in seconds. */
+export type ClipTiming = {
+  /** Absolute start time. */
+  start: number;
+  duration: number;
 };
 
 /** Runs once after mounting; a returned promise is awaited. */
@@ -29,10 +19,9 @@ export type MountedCallback = () => unknown;
 
 type BuildState = {
   config: VideoConfig;
-  scope: ScopeNode;
+  clip: ClipTiming;
   pending: Promise<unknown>[];
   mounted: MountedCallback[];
-  afterMounted: MountedCallback[];
   contexts: Map<object, unknown[]>;
 };
 
@@ -46,7 +35,7 @@ export function getBuildState(caller = "This function"): BuildState {
   if (!state) {
     throw new Error(
       `${caller} can only be called while mountComposition() mounts the tree (in a component ` +
-        "body), not in updaters or onMounted / afterMounted callbacks.",
+        "body), not in onMounted callbacks, ref callbacks or later.",
     );
   }
   return state;
@@ -57,130 +46,43 @@ export function setBuildState(next: BuildState | null) {
   holder[STATE_KEY] = next;
 }
 
-function isPositive(value: number) {
-  return Number.isFinite(value) && value > 0;
-}
-
-/** @internal Throws a descriptive error for an unusable video config. */
-export function assertVideoConfig(config: VideoConfig) {
-  const { fps, width, height, durationInFrames } = config;
-  if (!isPositive(fps)) {
-    throw new RangeError(`fps must be a positive number, got ${fps}.`);
-  }
-  if (!isPositive(width) || !isPositive(height)) {
-    throw new RangeError(`width and height must be positive numbers, got ${width} × ${height}.`);
-  }
-  if (!Number.isInteger(durationInFrames) || durationInFrames <= 0) {
-    throw new RangeError(`durationInFrames must be a positive integer, got ${durationInFrames}.`);
-  }
-}
-
-/** @internal */
-export function createScope(
-  from: number,
-  durationInFrames: number,
-  wrapper: ScopeNode["wrapper"],
-  display: string,
-): ScopeNode {
-  return {
-    from,
-    durationInFrames,
-    loop: null,
-    timeOffset: 0,
-    wrapper,
-    display,
-    updaters: [],
-    children: [],
-    mounted: null,
-  };
-}
-
-/** @internal */
-export function withScope<T>(scope: ScopeNode, fn: () => T): T {
+/** @internal Runs `fn` with `clip` as the enclosing clip. */
+export function withClip<T>(clip: ClipTiming, fn: () => T): T {
   const build = getBuildState();
-  const previous = build.scope;
-  build.scope.children.push(scope);
-  build.scope = scope;
+  const previous = build.clip;
+  build.clip = clip;
   try {
     return fn();
   } finally {
-    build.scope = previous;
+    build.clip = previous;
   }
 }
 
-/**
- * Registers a frame-pure function on the current scope. It is called with the scope-local
- * frame whenever the scope is visible; it must derive everything from that frame.
- */
-export function registerUpdater(updater: Updater) {
-  getBuildState("registerUpdater()").scope.updaters.push(updater);
-}
-
-/** Delays `mountComposition` (and so the clock) until `promise` settles. */
+/** Delays the end of `mountComposition` (and so the render) until `promise` settles. */
 export function registerPending(promise: Promise<unknown>) {
   getBuildState("registerPending()").pending.push(promise);
 }
 
 /**
- * Runs once after the tree is mounted and fonts/images resolved, before the
- * clock registers. Callbacks run sequentially; returned promises are awaited.
+ * Runs once after the tree is mounted, images decoded, fonts loaded and pending promises
+ * settled, before HyperFrames starts rendering: the place to measure layout or build
+ * animations (e.g. a GSAP timeline registered on `window.__timelines`). Callbacks run
+ * sequentially in registration order; returned promises are awaited.
  */
 export function onMounted(callback: MountedCallback) {
   getBuildState("onMounted()").mounted.push(callback);
 }
 
-/**
- * Runs once after every `onMounted` callback finished (e.g. to build animations from sizes
- * measured there). Callbacks run in parallel; returned promises are awaited.
- */
-export function afterMounted(callback: MountedCallback) {
-  getBuildState("afterMounted()").afterMounted.push(callback);
-}
-
-/**
- * The video config, with `durationInFrames` of the enclosing `Clip` (or the loop length
- * inside a `Loop`).
- */
+/** The composition settings (fps, size, duration in seconds). */
 export function getVideoConfig(): VideoConfig {
-  const { config, scope } = getBuildState("getVideoConfig()");
-  return {
-    fps: config.fps,
-    width: config.width,
-    height: config.height,
-    durationInFrames: scope.durationInFrames,
-  };
+  return { ...getBuildState("getVideoConfig()").config };
 }
 
-/** The current scope's absolute start frame on the composition timeline and its duration. */
-export function getClipTiming(): { fromFrame: number; durationInFrames: number } {
-  const { scope } = getBuildState("getClipTiming()");
-  return { fromFrame: scope.from, durationInFrames: scope.durationInFrames };
-}
-
-function visit(node: ScopeNode, frame: number) {
-  const local = frame - node.from;
-  const mounted = local >= 0 && local < node.durationInFrames;
-  if (node.mounted !== mounted) {
-    if (node.wrapper) {
-      node.wrapper.style.display = mounted ? node.display : "none";
-    }
-    node.mounted = mounted;
-  }
-  if (!mounted) {
-    return;
-  }
-  const shifted =
-    local - (typeof node.timeOffset === "function" ? node.timeOffset(local) : node.timeOffset);
-  const inner = node.loop === null ? shifted : shifted % node.loop;
-  for (const updater of node.updaters) {
-    updater(inner);
-  }
-  for (const child of node.children) {
-    visit(child, node.from + inner);
-  }
-}
-
-/** @internal */
-export function renderFrame(root: ScopeNode, frame: number) {
-  visit(root, frame);
+/**
+ * The absolute start and the duration of the enclosing `Clip`, in seconds (the whole
+ * composition outside any clip). Useful for animations timed on the composition clock,
+ * such as a Web Animations API `delay`.
+ */
+export function getClipTiming(): ClipTiming {
+  return { ...getBuildState("getClipTiming()").clip };
 }

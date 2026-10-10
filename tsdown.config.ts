@@ -15,7 +15,6 @@ export default defineConfig([
       runtime: "src/runtime.ts",
       "jsx-runtime": "src/jsx-runtime.ts",
       "jsx-dev-runtime": "src/jsx-dev-runtime.ts",
-      "asset-url": "src/asset-url.ts",
     },
     platform: "browser",
     target: "es2022",

@@ -8,5 +8,5 @@
   "env": {
     "builtin": true
   },
-  "ignorePatterns": ["**/dist/**", "**/renders/**"]
+  "ignorePatterns": ["**/dist/**", "**/renders/**", ".claude/**", ".agents/**"]
 }

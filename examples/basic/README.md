@@ -1,6 +1,6 @@
 # Basic example
 
-Two title cards joined by a slide transition, rendered by HyperFrames.
+Two scenes joined by a slide transition, rendered by HyperFrames. The animations are plain CSS (`src/styles.css`) and the Web Animations API (`src/video.tsx`); there is no GSAP.
 
 ```sh
 pnpm install          # at the repository root
@@ -12,5 +12,5 @@ pnpm check:render     # checks frame count and colors of the rendered video (nee
 ```
 
 - `index.html` is the composition root HyperFrames reads (`data-composition-id`, size, fps, duration).
-- `src/main.tsx` mounts the tree into it and registers the clock.
-- `src/video.tsx` is the composition.
+- `src/main.tsx` mounts the tree into it.
+- `src/video.tsx` is the composition: two `<Clip>`s overlapping for the transition.

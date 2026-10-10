@@ -10,8 +10,7 @@
     "check:render": "node scripts/check-render.ts"
   },
   "dependencies": {
-    "@inurun/vite-plugin-hyperframes-jsx": "workspace:*",
-    "gsap": "3.15.0"
+    "@inurun/vite-plugin-hyperframes-jsx": "workspace:*"
   },
   "devDependencies": {
     "hyperframes": "0.8.137",

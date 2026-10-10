@@ -1,5 +1,5 @@
 // Checks a rendered video against the example: frame count, and colors that only match when
-// HyperFrames seeks the registered clock to the right frame (including mid-transition).
+// HyperFrames seeks the CSS and Web Animations to the right time (including mid-transition).
 import { execFileSync } from "node:child_process";
 
 const file = process.argv[2] ?? "renders/basic.mp4";

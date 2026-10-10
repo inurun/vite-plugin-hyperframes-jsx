@@ -4,21 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1280, height=720" />
     <title>Basic composition</title>
-    <style>
-      body {
-        margin: 0;
-        background: #111;
-      }
-      #root {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-      }
-    </style>
   </head>
   <body>
-    <!-- data-duration is in seconds: 160 frames at 30 fps. -->
+    <!--
+      The composition root: size, fps and duration (seconds; 160 frames at 30 fps).
+      data-no-timeline: the animations are CSS and Web Animations, so there is no GSAP
+      timeline for HyperFrames to wait for.
+    -->
     <div
       id="root"
       data-composition-id="main"
@@ -27,6 +19,7 @@
       data-height="720"
       data-fps="30"
       data-duration="5.333333"
+      data-no-timeline
     ></div>
     <script type="module" src="./src/main.tsx"></script>
   </body>

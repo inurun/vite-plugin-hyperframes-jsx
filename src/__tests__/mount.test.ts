@@ -60,15 +60,11 @@ describe("mount", () => {
         children: [
           jsx(Theme.Provider, { value: "inner", children: jsx(Label, { id: "inner" }) }),
           jsx(Label, { id: "outer" }),
-          jsx(Theme.Consumer, {
-            children: (value: string) => jsx("i", { "data-testid": "consumer", children: value }),
-          }),
         ],
       }),
     ]);
     expect(get("outside").textContent).toBe("default");
     expect(get("inner").textContent).toBe("inner");
     expect(get("outer").textContent).toBe("outer");
-    expect(get("consumer").textContent).toBe("outer");
   });
 });

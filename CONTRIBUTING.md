@@ -26,7 +26,7 @@ pnpm check:render
 
 ## Guidelines
 
-- Keep the runtime deterministic: anything rendered must be a pure function of the frame.
+- Leave time to HyperFrames: the runtime builds the DOM once and must not depend on wall-clock time; clips and animations are seeked by HyperFrames.
 - Add tests next to the existing ones in `src/__tests__` (`*.test.ts`); JSX type checks go in `src/__tests__/jsx-types.tsx`.
 - Add a line to the "unreleased" section of `CHANGELOG.md` for user-facing changes.
 

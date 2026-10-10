@@ -1,45 +1,39 @@
-import {
-  Fill,
-  Frame,
-  linear,
-  slide,
-  ClipSeries,
-  getVideoConfig,
-} from "@inurun/vite-plugin-hyperframes-jsx/runtime";
+import { Clip, getClipTiming } from "@inurun/vite-plugin-hyperframes-jsx/runtime";
 
-function Title({ text, background }: { text: string; background: string }) {
-  // Runs once. Read the config here; compute frame values in updaters.
-  const { durationInFrames } = getVideoConfig();
+/** Seconds the two scenes overlap while the second one slides in. */
+const TRANSITION = 2 / 3;
+
+function Scene(props: { text: string; background: string; enter?: boolean; exit?: boolean }) {
+  // Runs once, while the tree mounts: the clip's absolute timing, in seconds.
+  const { start, duration } = getClipTiming();
+  const slideOut = (el: HTMLDivElement) =>
+    // Web Animations run on the composition clock, so the delay is absolute.
+    el.animate([{ transform: "translateX(0%)" }, { transform: "translateX(-100%)" }], {
+      delay: (start + duration - TRANSITION) * 1000,
+      duration: TRANSITION * 1000,
+      easing: "linear",
+      fill: "both",
+    });
   return (
-    <Fill style={{ justifyContent: "center", alignItems: "center", background }}>
-      <Frame
-        as="h1"
-        style={(frame) => ({
-          margin: 0,
-          color: "white",
-          fontFamily: "system-ui, sans-serif",
-          fontSize: 120,
-          opacity: Math.min(1, frame / 15),
-        })}
-        text={(frame) => `${text} ${durationInFrames - frame}`}
-      />
-    </Fill>
+    <div
+      className={props.enter ? "scene slide-in" : "scene"}
+      style={{ background: props.background, "--transition": `${TRANSITION}s` }}
+      ref={props.exit ? slideOut : undefined}
+    >
+      <h1 className="title">{props.text}</h1>
+    </div>
   );
 }
 
 export function Video() {
   return (
-    <ClipSeries>
-      <ClipSeries.Clip durationInFrames={90}>
-        <Title text="Hello" background="#1d4ed8" />
-      </ClipSeries.Clip>
-      <ClipSeries.Transition
-        timing={linear({ durationInFrames: 20 })}
-        presentation={slide({ direction: "from-right" })}
-      />
-      <ClipSeries.Clip durationInFrames={90}>
-        <Title text="World" background="#be123c" />
-      </ClipSeries.Clip>
-    </ClipSeries>
+    <>
+      <Clip start={0} duration={3}>
+        <Scene text="Hello" background="#1d4ed8" exit />
+      </Clip>
+      <Clip start={3 - TRANSITION} duration={3}>
+        <Scene text="World" background="#be123c" enter />
+      </Clip>
+    </>
   );
 }

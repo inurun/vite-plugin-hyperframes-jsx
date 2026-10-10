@@ -10,7 +10,8 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "@inurun/vite-plugin-hyperframes-jsx"
+    "jsxImportSource": "@inurun/vite-plugin-hyperframes-jsx",
+    "types": ["vite/client"]
   },
   "include": ["src", "vite.config.ts"]
 }

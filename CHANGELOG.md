@@ -4,41 +4,26 @@ All notable changes to this package are listed here. The project follows [Semant
 
 ## 0.2.0 (unreleased)
 
-First release on npm.
+First release on npm. The runtime is rebuilt around the HyperFrames contract: it builds the composition DOM and lets HyperFrames handle time, clip visibility and animations.
 
 ### Breaking changes
 
-- Components and functions use their own names instead of Remotion's, and build-time functions no longer look like React hooks:
-
-  | 0.1                                              | 0.2                                    |
-  | ------------------------------------------------ | -------------------------------------- |
-  | `Sequence`, `SequenceProps`                      | `Clip`, `ClipProps`                    |
-  | `TransitionSeries` (`.Sequence` / `.Transition`) | `ClipSeries` (`.Clip` / `.Transition`) |
-  | `AbsoluteFill`, `ABSOLUTE_FILL`                  | `Fill`, `FILL`                         |
-  | `layout="absolute-fill"`                         | `layout="fill"`                        |
-  | `linearTiming()`                                 | `linear()`                             |
-  | `useVideoConfig()`                               | `getVideoConfig()`                     |
-  | `useSequenceTiming()`                            | `getClipTiming()`                      |
-  | `useElementSize()`                               | `measureElement()`                     |
-  | `useContext()`                                   | `readContext()`                        |
-  | `staticFile()` from `/static-file`               | `assetUrl()` from `/asset-url`         |
-
+- **No clock, no GSAP.** `registerClock`, `requestRender` and `FRAME_EPSILON` are gone, and `gsap` is no longer a dependency. HyperFrames seeks the animations itself: use CSS animations, the Web Animations API, GSAP (registering your own timeline) or any other runtime HyperFrames supports.
+- **Frame-driven DOM is gone:** `Frame`, `registerUpdater`, `TimeShift` and `applyStyle`. Animate with one of the runtimes above.
+- **Timing is in seconds and backed by HyperFrames clips.** `Sequence` is replaced by `<Clip start duration>` (seconds), which renders `data-start` / `data-duration`. `Loop`, `TransitionSeries`, `linearTiming` and `slide` are gone: a transition is two overlapping clips whose contents animate.
+- **`mountComposition(compositionId, tree)`** reads fps, size and duration from the root's `data-*` attributes (was `mountComposition(tree, container, config)` with frame counts), holds HyperFrames through `window.__hf.buildReady` until it is done, and accepts an async function for the tree. It resolves to `{ root, config, dispose }`.
+- `useVideoConfig()` is `getVideoConfig()` and returns `{ fps, width, height, duration }` (seconds); `useSequenceTiming()` is `getClipTiming()` (`{ start, duration }`, absolute seconds); `useContext()` is `readContext()`; `Context.Consumer` is gone.
+- `afterMounted` and `useElementSize` are gone: measure and build animations in `onMounted`.
+- `AbsoluteFill` / `ABSOLUTE_FILL`, `Img` and `staticFile` (the `/static-file` entry) are gone. `<img>` elements are decoded automatically before rendering; public files are plain relative URLs.
 - The Vite plugin is `hyperframesJsx()` (was `hyperframes()`).
-- `registerClock(compositionId, composition)` takes fps and duration from `composition.config` (was `registerClock(compositionId, composition, fps, durationInFrames)`).
-- `MountedComposition` is `{ config, renderFrame, dispose }`; `root` (the internal timing tree) is gone.
-- `gsap` is a peer dependency: install it next to this package.
 - JSX props and `style` are typed: unknown attributes, unknown CSS properties and event handlers are type errors. Custom elements (`<my-element>`) still accept any attribute.
-- `data-*` / `aria-*` booleans are written as `"true"` / `"false"` (as React does) instead of being a boolean attribute or omitted.
-- Invalid configs and props throw (see the README) instead of rendering something unexpected.
-- The global `Window` type is no longer augmented with `__timelines` and `gsap`.
+- `data-*` / `aria-*` booleans are written as `"true"` / `"false"` (as React does).
 
 ### Added
 
-- A "Prior art" section in the README: the API is inspired by Remotion, independently implemented, with a table of equivalents.
 - `include` / `exclude` plugin options to scope the JSX runtime to some files.
-- `Clock.timeline`, `Clock.requestRender()` and `Clock.dispose()`; `MountedComposition.dispose()`. Registering a clock for an id that already has one disposes the old one; `requestRender()` re-renders every clock.
-- Exported prop types for every primitive, `HtmlProps`, `SvgProps`, `Updater`, `MountedCallback`, `CustomMount`.
-- `Img` warns when an image cannot be decoded.
+- The root gets `data-no-timeline` when no timeline was registered, so HyperFrames does not wait for one.
+- Clip ends snap to the frame grid, so adjacent clips meet on the same frame.
 - `vite` is an optional peer dependency, so the runtime can be used without it.
 - `examples/basic`, rendered with HyperFrames in CI.
 
@@ -46,7 +31,8 @@ First release on npm.
 
 - Vendor-prefixed unitless CSS properties (`WebkitLineClamp`) no longer get `px`.
 - More SVG attributes keep their camelCase name (`pointsAtX`, `targetX`, `kernelUnitLength`...).
-- Two copies of the runtime (e.g. one pre-bundled) share the build state and the clocks.
+- Two copies of the runtime (e.g. one pre-bundled) share the build state.
+- The global `Window` type is no longer augmented.
 
 ## 0.1.0
 

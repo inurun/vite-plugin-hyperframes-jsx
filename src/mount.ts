@@ -1,13 +1,6 @@
 import { applyProps, HTML_NS, SVG_NS } from "./dom";
 import { Fragment, type HfElement, type HfNode } from "./jsx-runtime";
-import {
-  assertVideoConfig,
-  createScope,
-  getBuildState,
-  renderFrame,
-  setBuildState,
-  type VideoConfig,
-} from "./scope";
+import { getBuildState, setBuildState, type VideoConfig } from "./scope";
 
 /** Where a custom-mount component appends its nodes, and the namespace to create them in. */
 export type MountContext = { parent: Element; ns: string };
@@ -15,14 +8,14 @@ export type MountContext = { parent: Element; ns: string };
 /** Mounts `props` into `ctx.parent`. Runs once, while the tree mounts. */
 export type MountFn<P> = (props: P, ctx: MountContext) => void;
 
-/** Components that take over mounting (Clip, Frame, Img...). */
+/** Components that take over mounting (such as `Clip`). */
 export type CustomMount<P = Record<string, unknown>> = { $$hfMount: MountFn<P> };
 
 type ProviderMarker = { $$hfProvider: object };
 
 /**
- * Low-level: defines a component that mounts its own DOM (as `Clip`, `Frame` and `Img`
- * do) instead of returning a tree. Typed as a function component so it is usable as a JSX
+ * Low-level: defines a component that mounts its own DOM (as `Clip` does) instead of
+ * returning a tree. Typed as a function component so it is usable as a JSX
  * tag; never called directly.
  */
 export function defineMount<P>(mountFn: MountFn<P>): ((props: P) => HfNode) & CustomMount<P> {
@@ -126,56 +119,126 @@ export function getContextStack(context: object): unknown[] {
 }
 
 export type MountedComposition = {
+  /** The composition root (`[data-composition-id]`). */
+  root: HTMLElement;
   config: VideoConfig;
-  /** Applies the DOM state of `frame` (an integer frame on the composition timeline). */
-  renderFrame: (frame: number) => void;
-  /** Removes the mounted nodes from the container. */
+  /** Removes the mounted nodes from the root. */
   dispose: () => void;
 };
 
+type HfWindow = {
+  __hf?: { buildReady?: Record<string, PromiseLike<unknown>> };
+  __timelines?: Record<string, unknown>;
+};
+
+function readNumber(root: HTMLElement, name: string, fallback?: number) {
+  const raw = root.getAttribute(`data-${name}`);
+  if (raw === null && fallback !== undefined) {
+    return fallback;
+  }
+  const value = Number(raw);
+  if (raw === null || raw.trim() === "" || !Number.isFinite(value) || value <= 0) {
+    throw new RangeError(
+      `The composition root needs a positive data-${name} attribute, got ${JSON.stringify(raw)}.`,
+    );
+  }
+  return value;
+}
+
+/** @internal Reads fps (default 30), size and duration (seconds) from the root's `data-*`. */
+export function readVideoConfig(root: HTMLElement): VideoConfig {
+  return {
+    fps: readNumber(root, "fps", 30),
+    width: readNumber(root, "width"),
+    height: readNumber(root, "height"),
+    duration: readNumber(root, "duration"),
+  };
+}
+
+async function decodeImages(nodes: ChildNode[]) {
+  const images = nodes.flatMap((node) =>
+    node instanceof Element
+      ? [...(node instanceof HTMLImageElement ? [node] : []), ...node.querySelectorAll("img")]
+      : [],
+  );
+  await Promise.all(
+    images.map((img) =>
+      img.decode().catch((error: unknown) => {
+        // The render goes on without the image; say which one so it is not a silent blank.
+        console.warn(`[hyperframes-jsx] Could not decode image "${img.src}".`, error);
+      }),
+    ),
+  );
+}
+
 /**
- * Mounts the tree once. Pending promises (image decodes...), fonts and
- * `onMounted` / `afterMounted` callbacks are awaited before resolving so the caller can
- * register the HF timeline.
+ * Mounts `tree` into the composition root `[data-composition-id="<compositionId>"]`, whose
+ * `data-fps` / `data-width` / `data-height` / `data-duration` give the config. `tree` may be
+ * a function, awaited first (e.g. to fetch data).
+ *
+ * HyperFrames waits (through `window.__hf.buildReady`) until the tree is mounted, images are
+ * decoded, fonts are loaded, `registerPending` promises have settled and `onMounted`
+ * callbacks have run; it then discovers and seeks the animations on the page (CSS, Web
+ * Animations, GSAP...). Call it synchronously when the entry module runs, before any
+ * `await`, so HyperFrames sees the hold on its first readiness check.
  */
-export async function mountComposition(
-  tree: HfNode,
-  container: HTMLElement,
-  config: VideoConfig,
+export function mountComposition(
+  compositionId: string,
+  tree: HfNode | (() => HfNode | Promise<HfNode>),
 ): Promise<MountedComposition> {
-  assertVideoConfig(config);
-  const root = createScope(0, config.durationInFrames, null, "");
+  const root = document.querySelector<HTMLElement>(
+    `[data-composition-id="${CSS.escape(compositionId)}"]`,
+  );
+  const ready = root
+    ? build(root, compositionId, tree)
+    : Promise.reject(new Error(`No element with data-composition-id="${compositionId}".`));
+  const hfWindow = window as unknown as HfWindow;
+  hfWindow.__hf ??= {};
+  hfWindow.__hf.buildReady ??= {};
+  hfWindow.__hf.buildReady[`hyperframes-jsx:${compositionId}`] = ready;
+  return ready;
+}
+
+async function build(
+  root: HTMLElement,
+  compositionId: string,
+  tree: HfNode | (() => HfNode | Promise<HfNode>),
+): Promise<MountedComposition> {
+  const config = readVideoConfig(root);
+  const node = typeof tree === "function" ? await tree() : tree;
   const state = {
     config,
-    scope: root,
+    clip: { start: 0, duration: config.duration },
     pending: [] as Promise<unknown>[],
     mounted: [] as (() => unknown)[],
-    afterMounted: [] as (() => unknown)[],
     contexts: new Map<object, unknown[]>(),
   };
-  const before = container.lastChild;
+  const before = root.lastChild;
   setBuildState(state);
   try {
-    mount(tree, { parent: container, ns: HTML_NS });
+    mount(node, { parent: root, ns: HTML_NS });
   } finally {
     setBuildState(null);
   }
   const nodes: ChildNode[] = [];
-  for (let node = before ? before.nextSibling : container.firstChild; node; ) {
-    nodes.push(node);
-    node = node.nextSibling;
+  for (let child = before ? before.nextSibling : root.firstChild; child; ) {
+    nodes.push(child);
+    child = child.nextSibling;
   }
-  await Promise.all([...state.pending, document.fonts.ready]);
+  await Promise.all([...state.pending, decodeImages(nodes), document.fonts.ready]);
   for (const callback of state.mounted) {
     await callback();
   }
-  await Promise.all(state.afterMounted.map((callback) => callback()));
+  // Without a registered timeline (CSS / Web Animations only), HyperFrames would wait for one.
+  if (!(window as unknown as HfWindow).__timelines?.[compositionId]) {
+    root.setAttribute("data-no-timeline", "");
+  }
   return {
+    root,
     config,
-    renderFrame: (frame) => renderFrame(root, frame),
     dispose: () => {
-      for (const node of nodes) {
-        node.remove();
+      for (const child of nodes) {
+        child.remove();
       }
     },
   };

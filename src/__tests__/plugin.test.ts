@@ -61,7 +61,6 @@ describe("hyperframesJsx", () => {
         write: false,
         minify: false,
         lib: { entry: "main.ts", formats: ["es"], fileName: "main" },
-        rolldownOptions: { external: ["gsap"] },
       },
     })) as Rolldown.RolldownOutput[];
     const code = output[0]!.output[0].code;

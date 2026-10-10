@@ -4,7 +4,6 @@ import { getContextStack } from "./mount";
 export type Context<T> = {
   $$default: T;
   Provider: (props: { value: T; children?: HfNode }) => HfNode;
-  Consumer: (props: { children: (value: T) => HfNode }) => HfNode;
 };
 
 /**
@@ -19,7 +18,6 @@ export function createContext<T>(defaultValue: T): Context<T> {
     },
     { $$hfProvider: context },
   );
-  context.Consumer = ({ children }) => children(readContext(context));
   return context;
 }
 
