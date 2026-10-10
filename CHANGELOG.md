@@ -2,9 +2,9 @@
 
 All notable changes to this package are listed here. The project follows [Semantic Versioning](https://semver.org/); before 1.0, breaking changes bump the minor version.
 
-## 0.2.0 (unreleased)
+## 0.2.0 - 2026-10-10
 
-First release on npm. The runtime is rebuilt around the HyperFrames contract: it builds the composition DOM and lets HyperFrames handle time, clip visibility and animations.
+Published privately on GitHub Packages to try the new runtime in a real project; not on npm yet. The runtime is rebuilt around the HyperFrames contract: it builds the composition DOM and lets HyperFrames handle time, clip visibility and animations.
 
 ### Breaking changes
 
