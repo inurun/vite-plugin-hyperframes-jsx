@@ -2,7 +2,7 @@
 
 All notable changes to this package are listed here. The project follows [Semantic Versioning](https://semver.org/); before 1.0, breaking changes bump the minor version.
 
-## Unreleased
+## 0.2.1 - 2026-10-10
 
 ### Added
 

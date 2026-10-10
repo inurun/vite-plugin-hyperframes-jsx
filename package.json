@@ -1,6 +1,6 @@
 {
   "name": "@inurun/vite-plugin-hyperframes-jsx",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "JSX for HyperFrames compositions: a Vite plugin and a tiny build-once DOM runtime",
   "keywords": [
     "animation",
