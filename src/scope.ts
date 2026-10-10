@@ -17,9 +17,12 @@ export type ClipTiming = {
 /** Runs once after mounting; a returned promise is awaited. */
 export type MountedCallback = () => unknown;
 
+/** @internal The enclosing clip, plus its start before snapping to frames. */
+export type ClipScope = ClipTiming & { exactStart: number };
+
 type BuildState = {
   config: VideoConfig;
-  clip: ClipTiming;
+  clip: ClipScope;
   pending: Promise<unknown>[];
   mounted: MountedCallback[];
   contexts: Map<object, unknown[]>;
@@ -47,7 +50,7 @@ export function setBuildState(next: BuildState | null) {
 }
 
 /** @internal Runs `fn` with `clip` as the enclosing clip. */
-export function withClip<T>(clip: ClipTiming, fn: () => T): T {
+export function withClip<T>(clip: ClipScope, fn: () => T): T {
   const build = getBuildState();
   const previous = build.clip;
   build.clip = clip;
@@ -84,5 +87,6 @@ export function getVideoConfig(): VideoConfig {
  * such as a Web Animations API `delay`.
  */
 export function getClipTiming(): ClipTiming {
-  return { ...getBuildState("getClipTiming()").clip };
+  const { start, duration } = getBuildState("getClipTiming()").clip;
+  return { start, duration };
 }

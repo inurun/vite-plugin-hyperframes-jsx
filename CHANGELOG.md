@@ -2,6 +2,22 @@
 
 All notable changes to this package are listed here. The project follows [Semantic Versioning](https://semver.org/); before 1.0, breaking changes bump the minor version.
 
+## Unreleased
+
+### Added
+
+- `MountedComposition.replace(tree)`: mounts a new tree hidden until it is ready, then shows it and disposes the current one (preview data updates, HMR). If it fails, the current tree stays.
+- `CompositionTree` type.
+
+### Changed
+
+- A nested `Clip` snaps its own absolute time (the parent's exact start plus `start`) instead of offsetting the parent's snapped start, so it lands on the same frame as anything else placed at that absolute time (e.g. static audio). It can move by one frame.
+- A zero-length `Clip` is not mounted instead of throwing; negative durations still throw.
+
+### Fixed
+
+- `mountComposition` removes the partly mounted tree when mounting fails.
+
 ## 0.2.0 - 2026-10-10
 
 Published privately on GitHub Packages to try the new runtime in a real project; not on npm yet. The runtime is rebuilt around the HyperFrames contract: it builds the composition DOM and lets HyperFrames handle time, clip visibility and animations.

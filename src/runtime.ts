@@ -18,6 +18,7 @@ export {
   mount,
   mountComposition,
   mountHost,
+  type CompositionTree,
   type CustomMount,
   type MountContext,
   type MountedComposition,

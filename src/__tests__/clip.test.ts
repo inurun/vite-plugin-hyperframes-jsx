@@ -47,6 +47,25 @@ describe("Clip", () => {
     expect(timing(get("b"))).toEqual(["1", "1"]);
   });
 
+  it("snaps nested clips from their exact absolute start", async () => {
+    const { get } = await render(
+      // The parent starts at 0.4 frame (snapped to 0); the child at 15.6 frames in all.
+      jsx(Clip, {
+        start: 0.4 / 30,
+        children: jsx(Clip, { start: 0.5 + 0.2 / 30, duration: 1, "data-testid": "child" }),
+      }),
+      { fps: "30" },
+    );
+    // Not 15 (the parent's snapped start plus the offset): the same frame as a sibling
+    // placed at the same absolute time, or the audio of a static manifest.
+    expect(get("child").dataset["start"]).toBe(String(Number((16 / 30).toFixed(6))));
+  });
+
+  it("does not mount a zero-length clip", async () => {
+    const { root } = await render(jsx(Clip, { start: 1, duration: 0, "data-testid": "empty" }));
+    expect(root.querySelector('[data-testid="empty"]')).toBeNull();
+  });
+
   it("skips a clip outside its parent", async () => {
     const { root } = await render(
       jsx(Clip, { duration: 2, children: jsx(Clip, { start: 3, "data-testid": "late" }) }),
@@ -84,7 +103,7 @@ describe("Clip", () => {
 
   it.each([
     [{ start: Number.NaN }, /start must be a finite number/],
-    [{ duration: 0 }, /duration must be a positive number/],
+    [{ duration: -1 }, /duration must be a non-negative number/],
   ])("rejects invalid props %o", async (props, message) => {
     await expect(render(jsx(Clip, props))).rejects.toThrow(message);
   });

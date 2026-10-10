@@ -120,9 +120,9 @@ A complete project, rendered and checked in CI, is in [`examples/basic`](example
 </Clip>
 ```
 
-- `start` and `duration` are in **seconds**. `start` is relative to the enclosing clip (default 0); `duration` defaults to the rest of the enclosing clip and is clamped to it. A clip entirely outside its parent is not mounted.
+- `start` and `duration` are in **seconds**. `start` is relative to the enclosing clip (default 0); `duration` defaults to the rest of the enclosing clip and is clamped to it. A zero-length clip, or one entirely outside its parent, is not mounted (data-driven durations can be 0).
 - It renders a `div class="clip"` with absolute `data-start` / `data-duration`, `position: absolute; inset: 0` (override with `style`). HyperFrames shows and hides it.
-- Both ends snap to the frame grid, so clips that meet in seconds meet on the same frame.
+- Both ends snap to the frame grid, so clips that meet in seconds meet on the same frame. A nested clip snaps its own absolute time (the parent's exact start plus its `start`), so it lands on the same frame as anything else placed at that absolute time, such as audio in the HTML.
 - Overlapping clips are fine: a transition is two overlapping clips whose contents animate.
 
 ## Animations
@@ -171,9 +171,23 @@ Animate elements **inside** a clip, not the clip element itself: HyperFrames own
 
 ## Mounting
 
-`mountComposition(compositionId, tree)` mounts `tree` (or the result of an async function) into `[data-composition-id="<compositionId>"]` and resolves to `{ root, config, dispose }`.
+`mountComposition(compositionId, tree)` mounts `tree` (or the result of an async function) into `[data-composition-id="<compositionId>"]` and resolves to `{ root, config, replace, dispose }`. If mounting fails, the partly mounted nodes are removed.
 
 It registers a hold on `window.__hf.buildReady` synchronously, so call it when the entry module runs, before any `await`. HyperFrames starts rendering once the tree is mounted, images are decoded (a failure is logged and the render goes on), fonts are loaded, `registerPending` promises have settled and `onMounted` callbacks have run. If no timeline was registered under the composition id by then, the root gets `data-no-timeline` so HyperFrames does not wait for one; write it in the HTML too, which also keeps `hyperframes lint` quiet.
+
+### Replacing the tree
+
+To show new data (a preview editor sending updates) or a hot-reloaded module, call `replace` on the current composition:
+
+```tsx
+let current = await mountComposition("main", <Video data={initial} />);
+
+async function update(data: Data) {
+  current = await current.replace(<Video data={data} />);
+}
+```
+
+The new tree mounts next to the current one with `opacity: 0` on its top-level elements, goes through the same waits, then is shown while the current one is disposed, so the update never flashes. If it fails, it is removed and the current tree stays. Serialize updates (one `replace` at a time).
 
 ## API
 
@@ -183,11 +197,11 @@ It registers a hold on `window.__hf.buildReady` synchronously, so call it when t
 
 `@inurun/vite-plugin-hyperframes-jsx/runtime`
 
-- `mountComposition(compositionId, tree)` → `Promise<{ root, config, dispose }>`.
+- `mountComposition(compositionId, tree)` → `Promise<{ root, config, replace(tree), dispose() }>`.
 - `Clip` (`start`, `duration`, plus `div` props).
 - Build-time functions, called in a component body while the tree mounts: `getVideoConfig()` (`{ fps, width, height, duration }`), `getClipTiming()` (`{ start, duration }` of the enclosing clip, absolute seconds), `onMounted(callback)`, `registerPending(promise)`, `createContext(default)` / `readContext(context)` (with `<Context.Provider value>`). Called later (in a callback), they throw and say so.
 - Low-level, for custom components that create their own DOM: `defineMount(mountFn)`, `mount`, `mountHost`, `jsx`, `Fragment`. These may change between minor versions before 1.0.
-- Types: `HfNode`, `HfElement`, `JSX`, `StyleObject`, `VideoConfig`, `ClipTiming`, `ClipProps`, `MountedComposition`, `MountedCallback`, `HtmlProps`, `SvgProps`, `SvgAttributes`, `BaseProps`, `Ref`, `Context`, `CustomMount`, `MountContext`, `MountFn`.
+- Types: `HfNode`, `HfElement`, `JSX`, `StyleObject`, `VideoConfig`, `ClipTiming`, `ClipProps`, `MountedComposition`, `CompositionTree`, `MountedCallback`, `HtmlProps`, `SvgProps`, `SvgAttributes`, `BaseProps`, `Ref`, `Context`, `CustomMount`, `MountContext`, `MountFn`.
 
 ## Compatibility
 
@@ -202,7 +216,7 @@ The runtime relies on these parts of the HyperFrames contract: `data-start` / `d
 ## Roadmap
 
 - **Studio and `hyperframes timeline` support.** Clips created by JSX exist only at runtime, while Studio and `hyperframes timeline` read the composition HTML, so these clips do not appear there (rendering is unaffected). The plan is to expose them to that tooling, for example by emitting the clips into the built HTML.
-- **Preview and live updates.** Check HyperFrames' preview player, and replacing the tree after the first mount (new data, HMR), against the adapters' animation discovery.
+- **Preview and live updates.** `replace` works in HyperFrames' preview player when animations live on a GSAP timeline re-registered with each mount (HyperFrames rebinds it after runtime data is applied). Whether HyperFrames rediscovers CSS and Web Animations after a replacement is still to be checked.
 
 ## Contributing
 

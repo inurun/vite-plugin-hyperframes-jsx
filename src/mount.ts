@@ -122,9 +122,19 @@ export type MountedComposition = {
   /** The composition root (`[data-composition-id]`). */
   root: HTMLElement;
   config: VideoConfig;
+  /**
+   * Mounts `tree` next to this one, invisible until it is ready (same waits as
+   * `mountComposition`), then shows it and disposes this one, so an update (new data, HMR)
+   * never flashes blank or half-built. If the new tree fails, it is removed and this one
+   * stays. Resolves to the new composition.
+   */
+  replace: (tree: CompositionTree) => Promise<MountedComposition>;
   /** Removes the mounted nodes from the root. */
   dispose: () => void;
 };
+
+/** A tree, or a function returning one (awaited first, e.g. to fetch data). */
+export type CompositionTree = HfNode | (() => HfNode | Promise<HfNode>);
 
 type HfWindow = {
   __hf?: { buildReady?: Record<string, PromiseLike<unknown>> };
@@ -184,14 +194,21 @@ async function decodeImages(nodes: ChildNode[]) {
  */
 export function mountComposition(
   compositionId: string,
-  tree: HfNode | (() => HfNode | Promise<HfNode>),
+  tree: CompositionTree,
 ): Promise<MountedComposition> {
   const root = document.querySelector<HTMLElement>(
     `[data-composition-id="${CSS.escape(compositionId)}"]`,
   );
-  const ready = root
-    ? build(root, compositionId, tree)
-    : Promise.reject(new Error(`No element with data-composition-id="${compositionId}".`));
+  return hold(
+    compositionId,
+    root
+      ? build(root, compositionId, tree, false)
+      : Promise.reject(new Error(`No element with data-composition-id="${compositionId}".`)),
+  );
+}
+
+/** Registers `ready` as the HyperFrames build hold of the composition. */
+function hold(compositionId: string, ready: Promise<MountedComposition>) {
   const hfWindow = window as unknown as HfWindow;
   hfWindow.__hf ??= {};
   hfWindow.__hf.buildReady ??= {};
@@ -199,47 +216,93 @@ export function mountComposition(
   return ready;
 }
 
+/** Hides elements with inline `opacity: 0` and returns a function restoring them. */
+function hide(nodes: ChildNode[]) {
+  const elements = nodes.filter(
+    (node): node is HTMLElement | SVGElement =>
+      node instanceof HTMLElement || node instanceof SVGElement,
+  );
+  const previous = elements.map((el) => [
+    el.style.getPropertyValue("opacity"),
+    el.style.getPropertyPriority("opacity"),
+  ]);
+  for (const el of elements) {
+    el.style.setProperty("opacity", "0");
+  }
+  return () => {
+    for (const [index, el] of elements.entries()) {
+      const [value, priority] = previous[index]!;
+      if (value) {
+        el.style.setProperty("opacity", value, priority);
+      } else {
+        el.style.removeProperty("opacity");
+      }
+    }
+  };
+}
+
 async function build(
   root: HTMLElement,
   compositionId: string,
-  tree: HfNode | (() => HfNode | Promise<HfNode>),
+  tree: CompositionTree,
+  hidden: boolean,
 ): Promise<MountedComposition> {
   const config = readVideoConfig(root);
   const node = typeof tree === "function" ? await tree() : tree;
   const state = {
     config,
-    clip: { start: 0, duration: config.duration },
+    clip: { start: 0, duration: config.duration, exactStart: 0 },
     pending: [] as Promise<unknown>[],
     mounted: [] as (() => unknown)[],
     contexts: new Map<object, unknown[]>(),
   };
   const before = root.lastChild;
-  setBuildState(state);
-  try {
-    mount(node, { parent: root, ns: HTML_NS });
-  } finally {
-    setBuildState(null);
-  }
   const nodes: ChildNode[] = [];
-  for (let child = before ? before.nextSibling : root.firstChild; child; ) {
-    nodes.push(child);
-    child = child.nextSibling;
-  }
-  await Promise.all([...state.pending, decodeImages(nodes), document.fonts.ready]);
-  for (const callback of state.mounted) {
-    await callback();
+  const dispose = () => {
+    for (const child of nodes) {
+      child.remove();
+    }
+  };
+  let show = () => {};
+  try {
+    setBuildState(state);
+    try {
+      mount(node, { parent: root, ns: HTML_NS });
+    } finally {
+      setBuildState(null);
+      for (let child = before ? before.nextSibling : root.firstChild; child; ) {
+        nodes.push(child);
+        child = child.nextSibling;
+      }
+    }
+    if (hidden) {
+      show = hide(nodes);
+    }
+    await Promise.all([...state.pending, decodeImages(nodes), document.fonts.ready]);
+    for (const callback of state.mounted) {
+      await callback();
+    }
+  } catch (error) {
+    dispose();
+    throw error;
   }
   // Without a registered timeline (CSS / Web Animations only), HyperFrames would wait for one.
   if (!(window as unknown as HfWindow).__timelines?.[compositionId]) {
     root.setAttribute("data-no-timeline", "");
   }
-  return {
+  show();
+  const composition: MountedComposition = {
     root,
     config,
-    dispose: () => {
-      for (const child of nodes) {
-        child.remove();
-      }
-    },
+    replace: (next) =>
+      hold(
+        compositionId,
+        build(root, compositionId, next, true).then((replaced) => {
+          composition.dispose();
+          return replaced;
+        }),
+      ),
+    dispose,
   };
+  return composition;
 }

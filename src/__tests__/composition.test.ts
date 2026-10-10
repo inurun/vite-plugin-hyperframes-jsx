@@ -106,6 +106,55 @@ describe("mountComposition", () => {
     expect(root.innerHTML).toBe("<header></header>");
   });
 
+  it("removes the partly mounted tree when mounting fails", async () => {
+    const Broken = () => {
+      throw new Error("broken");
+    };
+    const { root, id } = createRoot();
+    await expect(mountComposition(id, [jsx("p", {}), jsx(Broken, {})])).rejects.toThrow("broken");
+    expect(root.children).toHaveLength(0);
+  });
+
+  it("replaces the tree once the new one is ready, hidden until then", async () => {
+    const { root, id } = createRoot();
+    const first = await mountComposition(id, jsx("p", { "data-testid": "old" }));
+    let release!: () => void;
+    let opacityWhileMounting: string | undefined;
+    const Next = () => {
+      registerPending(new Promise<void>((resolve) => (release = resolve)));
+      onMounted(() => {
+        opacityWhileMounting =
+          root.querySelector<HTMLElement>('[data-testid="new"]')?.style.opacity;
+      });
+      return jsx("p", { "data-testid": "new", style: { opacity: 0.5 } });
+    };
+    const replacing = first.replace(jsx(Next, {}));
+    expect(hfWindow.__hf?.buildReady?.[`hyperframes-jsx:${id}`]).toBe(replacing);
+    await Promise.resolve();
+    expect(root.querySelector('[data-testid="old"]')).not.toBeNull();
+    release();
+    const second = await replacing;
+    expect(opacityWhileMounting).toBe("0");
+    expect(root.querySelector('[data-testid="old"]')).toBeNull();
+    expect(root.querySelector<HTMLElement>('[data-testid="new"]')?.style.opacity).toBe("0.5");
+    second.dispose();
+    expect(root.children).toHaveLength(0);
+  });
+
+  it("keeps the current tree when the replacement fails", async () => {
+    const { root, id } = createRoot();
+    const first = await mountComposition(id, jsx("p", { "data-testid": "old" }));
+    const Broken = () => {
+      onMounted(() => {
+        throw new Error("broken");
+      });
+      return jsx("p", { "data-testid": "new" });
+    };
+    await expect(first.replace(jsx(Broken, {}))).rejects.toThrow("broken");
+    expect(root.querySelector('[data-testid="old"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="new"]')).toBeNull();
+  });
+
   it("explains that build-time functions cannot run later", async () => {
     const Probe = () => {
       onMounted(() => getVideoConfig());
