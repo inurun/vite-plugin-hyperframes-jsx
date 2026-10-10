@@ -211,6 +211,7 @@ The runtime relies on these parts of the HyperFrames contract: `data-start` / `d
 
 - **Audio must be static.** HyperFrames render does not pick up `<audio>` elements created at runtime. Put audio clips in the composition HTML (a static manifest) instead of mounting them from JSX.
 - **No `Date` subclasses.** HyperFrames render replaces `Date` with a virtual clock shim, which breaks subclasses such as `TZDate` from `@date-fns/tz`. Format dates with `Intl.DateTimeFormat` and a `timeZone` option.
+- **Don't assign `window.gsap` when you bundle GSAP.** HyperFrames' render shim then replaces `gsap.timeline()` with one returning a deferred proxy; adding such a timeline to another one with `add()` is silently dropped. Registering your timeline on `window.__timelines` is enough.
 - **Don't animate the clip element.** Tweening `display`, `visibility` or `autoAlpha` on a clip races with HyperFrames; animate a child.
 
 ## Roadmap
