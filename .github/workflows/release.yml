@@ -26,17 +26,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Check that the tag matches the package version
         run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
-      - name: Skip a version already on npm (e.g. published by hand)
-        id: published
-        run: |
-          # Prints nothing (exit 0) for a version that is not published yet.
-          if [ -n "$(npm view "$(node -p 'require("./package.json").name')@${GITHUB_REF_NAME#v}" version 2> /dev/null)" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          fi
       # Trusted publishing (OIDC, configured on npmjs.com): no token, provenance included.
-      # prepublishOnly runs `pnpm check`.
-      - if: steps.published.outputs.skip != 'true'
-        run: npm publish --provenance --access public
+      # prepublishOnly runs `pnpm check`. A version already on npm (e.g. published by hand) is
+      # skipped; `npm view` cannot tell, as the registry metadata lags behind a publish.
+      - name: Publish to npm
+        # `bash` (unlike the default shell) sets pipefail, so a failed publish is not hidden by tee.
+        shell: bash
+        run: |
+          if ! npm publish --provenance --access public 2>&1 | tee publish.log; then
+            grep -q "cannot publish over the previously published" publish.log
+            echo "Already on npm: skipped."
+          fi
 
   github-packages:
     runs-on: ubuntu-latest
