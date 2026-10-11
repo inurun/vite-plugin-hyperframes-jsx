@@ -2,6 +2,15 @@
 
 All notable changes to this package are listed here. The project follows [Semantic Versioning](https://semver.org/); before 1.0, breaking changes bump the minor version.
 
+## 0.2.3 - 2026-10-11
+
+The runtime is unchanged.
+
+### Changed
+
+- Checked with HyperFrames 0.8.146 (`examples/basic` is rendered with it in CI).
+- First release published from CI with npm trusted publishing and provenance.
+
 ## 0.2.2 - 2026-10-11
 
 First release on npm. The runtime is unchanged from 0.2.1.
