@@ -1,17 +1,20 @@
 name: Release
 
-# Push a tag matching the package version (e.g. v0.2.0) to publish it to npm.
+# Push a tag matching the package version (e.g. v0.2.2) to publish it to npm and to GitHub
+# Packages (where projects that map the whole @inurun scope to GitHub Packages install it).
 on:
   push:
     tags: ["v*"]
 
 permissions:
   contents: read
-  id-token: write # npm provenance / trusted publishing
 
 jobs:
-  publish:
+  npm:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance / trusted publishing
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -28,3 +31,34 @@ jobs:
         env:
           # Not needed once trusted publishing is configured on npmjs.com.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  github-packages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://npm.pkg.github.com
+          scope: "@inurun"
+      - run: pnpm install --frozen-lockfile
+      - name: Check that the tag matches the package version
+        run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
+      - name: Publish to GitHub Packages instead of npm
+        # publishConfig pins npmjs (also for the scope); drop it for this registry.
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            delete pkg.publishConfig.registry;
+            delete pkg.publishConfig["@inurun:registry"];
+            fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+          '
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

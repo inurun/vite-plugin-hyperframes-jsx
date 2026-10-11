@@ -2,6 +2,15 @@
 
 All notable changes to this package are listed here. The project follows [Semantic Versioning](https://semver.org/); before 1.0, breaking changes bump the minor version.
 
+## 0.2.2 - 2026-10-11
+
+First release on npm. The runtime is unchanged from 0.2.1.
+
+### Changed
+
+- README: don't assign `window.gsap` when you bundle GSAP (HyperFrames' render shim then breaks nested timelines).
+- Releases are published to npm (with provenance) and to GitHub Packages.
+
 ## 0.2.1 - 2026-10-10
 
 ### Added

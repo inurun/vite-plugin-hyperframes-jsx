@@ -1,6 +1,6 @@
 {
   "name": "@inurun/vite-plugin-hyperframes-jsx",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "JSX for HyperFrames compositions: a Vite plugin and a tiny build-once DOM runtime",
   "keywords": [
     "animation",
@@ -44,9 +44,9 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
+    "@inurun:registry": "https://registry.npmjs.org/",
     "access": "public",
-    "registry": "https://registry.npmjs.org/",
-    "@inurun:registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tsdown",
