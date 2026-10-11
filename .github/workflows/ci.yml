@@ -40,6 +40,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
+          # setup-node v5 caches the `packageManager` (pnpm 11) by default, and pnpm 11 does not
+          # run on these Node versions.
+          package-manager-cache: false
       - run: node --version && ./node_modules/.bin/vitest run
 
   render:
