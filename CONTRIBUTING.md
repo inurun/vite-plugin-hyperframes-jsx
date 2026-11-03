@@ -28,9 +28,16 @@ pnpm check:render
 
 - Leave time to HyperFrames: the runtime builds the DOM once and must not depend on wall-clock time; clips and animations are seeked by HyperFrames.
 - Add tests next to the existing ones in `src/__tests__` (`*.test.ts`); JSX type checks go in `src/__tests__/jsx-types.tsx`.
-- Add a line to the "unreleased" section of `CHANGELOG.md` for user-facing changes.
+- Write commit messages (and squash-merge titles) as [Conventional Commits](https://www.conventionalcommits.org/): the changelog and the next version come from them.
+  - `feat:` and `fix:` (and `perf:`, `revert:`) appear in the changelog and make a release; `feat!:` or a `BREAKING CHANGE:` footer is breaking, which bumps the minor version before 1.0.
+  - `compat:` records a check against a new HyperFrames version (e.g. `compat: checked with HyperFrames 0.9.7`); it appears under "Compatibility" and makes a release.
+  - `docs:`, `chore:`, `ci:`, `test:`, `refactor:`, `build:` and `style:` are left out of the changelog.
+  - A squash merge keeps only the PR title, so squash only when the title describes the whole PR; otherwise use a merge commit.
 
 ## Releasing
 
-1. Move the "unreleased" changelog entries under the new version and bump `version` in `package.json`.
-2. Commit, then push a tag `v<version>`. The `Release` workflow checks the package and publishes it to npm with provenance.
+Releases are automated with [release-please](https://github.com/googleapis/release-please) in the `Release` workflow:
+
+1. Every push to `main` opens or updates a release PR that bumps `version` in `package.json` and adds the new section to `CHANGELOG.md`. release-please rewrites the PR on every push to `main`, so edits made to it by hand are lost. CI does not run on that PR (it is opened with `GITHUB_TOKEN`); the publish jobs run `pnpm check` before publishing.
+2. Merging the release PR tags `v<version>`, creates the GitHub release, and publishes the package to npm (trusted publishing, with provenance) and to GitHub Packages.
+3. If a publish fails, fix the cause and run the `Release` workflow by hand: it publishes the version in `package.json` from its tag and skips a registry that already has it.

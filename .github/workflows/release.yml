@@ -1,31 +1,68 @@
 name: Release
 
-# Push a tag matching the package version (e.g. v0.2.3) to publish it to npm and to GitHub
-# Packages (where projects that map the whole @inurun scope to GitHub Packages install it).
+# On every push to main, release-please opens or updates the release PR (version bump and
+# CHANGELOG from Conventional Commits). Merging that PR tags the release, creates the GitHub
+# release, and the publish jobs below publish it to npm and to GitHub Packages (where projects
+# that map the whole @inurun scope to GitHub Packages install it).
+#
+# The publish jobs run in this workflow because a tag or release created with GITHUB_TOKEN
+# does not trigger other workflows. Run the workflow by hand (workflow_dispatch) to publish
+# the version in package.json again, for example after a failed publish; a version already
+# on a registry is skipped.
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  npm:
+  release-please:
+    if: github.repository == 'inurun/vite-plugin-hyperframes-jsx' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  npm:
+    needs: release-please
+    if: >-
+      always() && github.repository == 'inurun/vite-plugin-hyperframes-jsx' &&
+      (needs.release-please.outputs.releases_created == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: npm
     permissions:
       contents: read
       id-token: write # npm provenance / trusted publishing
     steps:
       - uses: actions/checkout@v5
+      - name: Check out the release tag
+        run: |
+          tag="v$(node -p 'require("./package.json").version')"
+          git fetch --depth=1 origin "refs/tags/$tag:refs/tags/$tag"
+          git checkout "$tag"
       - uses: pnpm/action-setup@v4
+      # No dependency cache in a release build, so a poisoned cache cannot reach the package.
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-          cache: pnpm
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
       - run: pnpm install --frozen-lockfile
-      - name: Check that the tag matches the package version
-        run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
       # Trusted publishing (OIDC, configured on npmjs.com): no token, provenance included.
       # prepublishOnly runs `pnpm check`. A version already on npm (e.g. published by hand) is
       # skipped; `npm view` cannot tell, as the registry metadata lags behind a publish.
@@ -39,24 +76,32 @@ jobs:
           fi
 
   github-packages:
+    needs: release-please
+    if: >-
+      always() && github.repository == 'inurun/vite-plugin-hyperframes-jsx' &&
+      (needs.release-please.outputs.releases_created == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v5
+      - name: Check out the release tag
+        run: |
+          tag="v$(node -p 'require("./package.json").version')"
+          git fetch --depth=1 origin "refs/tags/$tag:refs/tags/$tag"
+          git checkout "$tag"
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-          cache: pnpm
           registry-url: https://npm.pkg.github.com
           scope: "@inurun"
+          package-manager-cache: false
       - run: pnpm install --frozen-lockfile
-      - name: Check that the tag matches the package version
-        run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
       - name: Publish to GitHub Packages instead of npm
         # publishConfig pins npmjs (also for the scope); drop it for this registry.
+        shell: bash
         run: |
           node -e '
             const fs = require("node:fs");
@@ -65,6 +110,9 @@ jobs:
             delete pkg.publishConfig["@inurun:registry"];
             fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
           '
-      - run: npm publish
+          if ! npm publish 2>&1 | tee publish.log; then
+            grep -qi "cannot publish over" publish.log
+            echo "Already on GitHub Packages: skipped."
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
