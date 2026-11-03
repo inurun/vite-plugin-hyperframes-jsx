@@ -2,12 +2,6 @@
 
 All notable changes to this package are listed here. The project follows [Semantic Versioning](https://semver.org/); before 1.0, breaking changes bump the minor version.
 
-## Unreleased
-
-### Fixed
-
-- `mountComposition` no longer builds a `querySelector` from a template literal, which `hyperframes lint` (0.9) reports as an error in the built page.
-
 ## 0.2.3 - 2026-10-11
 
 The runtime is unchanged.
