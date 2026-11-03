@@ -2,6 +2,18 @@
 
 All notable changes to this package are listed here. The project follows [Semantic Versioning](https://semver.org/); before 1.0, breaking changes bump the minor version.
 
+## [0.2.4](https://github.com/inurun/vite-plugin-hyperframes-jsx/compare/v0.2.3...v0.2.4) (2026-11-03)
+
+
+### Bug Fixes
+
+* find the composition root without a template-literal selector ([fe6a9de](https://github.com/inurun/vite-plugin-hyperframes-jsx/commit/fe6a9ded6dd1859cb33c18b6d8a184dc39e79672))
+
+
+### Compatibility
+
+* checked with HyperFrames 0.9.7 ([ebae698](https://github.com/inurun/vite-plugin-hyperframes-jsx/commit/ebae6987a9efc0a6829318a776887ed8e78aba5a))
+
 ## 0.2.3 - 2026-10-11
 
 The runtime is unchanged.
