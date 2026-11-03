@@ -196,8 +196,10 @@ export function mountComposition(
   compositionId: string,
   tree: CompositionTree,
 ): Promise<MountedComposition> {
-  const root = document.querySelector<HTMLElement>(
-    `[data-composition-id="${CSS.escape(compositionId)}"]`,
+  // No selector built from `compositionId`: `hyperframes lint` rejects a template literal in
+  // `querySelector`.
+  const root = Array.from(document.querySelectorAll<HTMLElement>("[data-composition-id]")).find(
+    (element) => element.dataset.compositionId === compositionId,
   );
   return hold(
     compositionId,

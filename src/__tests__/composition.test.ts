@@ -49,6 +49,15 @@ describe("mountComposition", () => {
     );
   });
 
+  it("finds a root whose id has selector characters", async () => {
+    const { root } = createRoot();
+    const id = 'scene "1" [a]';
+    root.setAttribute("data-composition-id", id);
+    const composition = await mountComposition(id, jsx("p", {}));
+    expect(composition.root).toBe(root);
+    expect(root.querySelector("p")).not.toBeNull();
+  });
+
   it("awaits the tree function, pending promises and onMounted callbacks in order", async () => {
     const order: string[] = [];
     let release!: () => void;
