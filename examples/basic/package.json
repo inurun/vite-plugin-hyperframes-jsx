@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "tsc": "tsc --noEmit",
-    "render": "vite build && hyperframes render dist --output renders/basic.mp4",
+    "render": "vite build && hyperframes render dist --strict --output renders/basic.mp4",
     "check:render": "node scripts/check-render.ts"
   },
   "dependencies": {

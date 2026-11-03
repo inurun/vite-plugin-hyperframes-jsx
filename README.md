@@ -205,13 +205,14 @@ The new tree mounts next to the current one with `opacity: 0` on its top-level e
 
 ## Compatibility
 
-The runtime relies on these parts of the HyperFrames contract: `data-start` / `data-duration` clips, `window.__hf.buildReady`, `data-no-timeline`, and the runtime adapters that seek CSS, Web Animations and GSAP. `examples/basic` is rendered with HyperFrames 0.9.7 in CI and its frames are checked.
+The runtime relies on these parts of the HyperFrames contract: `data-start` / `data-duration` clips, `window.__hf.buildReady`, `data-no-timeline`, and the runtime adapters that seek CSS, Web Animations and GSAP. `examples/basic` is rendered with HyperFrames 0.9.7 in CI with `--strict`, so `hyperframes lint` errors in the built page fail it, and its frames are checked.
 
 ## HyperFrames gotchas
 
 - **Audio must be static.** HyperFrames render does not pick up `<audio>` elements created at runtime. Put audio clips in the composition HTML (a static manifest) instead of mounting them from JSX.
 - **No `Date` subclasses.** HyperFrames render replaces `Date` with a virtual clock shim, which breaks subclasses such as `TZDate` from `@date-fns/tz`. Format dates with `Intl.DateTimeFormat` and a `timeZone` option.
 - **Don't assign `window.gsap` when you bundle GSAP.** HyperFrames' render shim then replaces `gsap.timeline()` with one returning a deferred proxy; adding such a timeline to another one with `add()` is silently dropped. Registering your timeline on `window.__timelines` is enough.
+- **No template literals in `querySelector`.** `hyperframes lint` reports ``querySelector(`...${id}...`)`` as an error, also in your bundled scripts, and `hyperframes render --strict` then fails. Use a fixed selector and filter the matches (for example on `dataset`), or build the selector by concatenation.
 - **Don't animate the clip element.** Tweening `display`, `visibility` or `autoAlpha` on a clip races with HyperFrames; animate a child.
 
 ## Roadmap

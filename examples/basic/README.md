@@ -7,7 +7,7 @@ pnpm install          # at the repository root
 pnpm build            # builds the package (the example uses it from the workspace)
 cd examples/basic
 pnpm dev              # preview in the browser
-pnpm render           # vite build + hyperframes render → renders/basic.mp4
+pnpm render           # vite build + hyperframes render --strict → renders/basic.mp4
 pnpm check:render     # checks frame count and colors of the rendered video (needs ffmpeg)
 ```
 
