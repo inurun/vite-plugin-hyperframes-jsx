@@ -23,12 +23,12 @@ jobs:
       - run: pnpm check
 
   test-node:
-    # The oldest Node versions in `engines`. pnpm itself needs a newer Node, so install with
+    # The oldest Node version in `engines`. pnpm itself needs a newer Node, so install with
     # Node 24 and run the tests on the older one.
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ["20.19", "22.12"]
+        node: ["22.12"]
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4

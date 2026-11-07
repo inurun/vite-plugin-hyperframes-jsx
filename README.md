@@ -17,6 +17,8 @@ Write [HyperFrames](https://github.com/heygen-com/hyperframes) compositions in J
 pnpm add @inurun/vite-plugin-hyperframes-jsx
 ```
 
+Requires Node.js 22.12 or newer (Node.js 20 is no longer supported).
+
 `vite` 8 or newer is an optional peer dependency (only the plugin needs it; the runtime works with any bundler that supports `jsxImportSource`).
 
 ## Vite config

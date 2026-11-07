@@ -4,7 +4,7 @@ Issues and pull requests are welcome. For a larger change, open an issue first s
 
 ## Setup
 
-Requires Node.js 22.13+ (24 recommended; the package itself supports `^20.19.0 || >=22.12.0`) and pnpm (the version in `packageManager`; `corepack enable` picks it up).
+Requires Node.js 22.13+ (24 recommended; the package itself supports `>=22.12.0`) and pnpm (the version in `packageManager`; `corepack enable` picks it up).
 
 ```sh
 pnpm install
