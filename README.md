@@ -207,7 +207,7 @@ The new tree mounts next to the current one with `opacity: 0` on its top-level e
 
 ## Compatibility
 
-The runtime relies on these parts of the HyperFrames contract: `data-start` / `data-duration` clips, `window.__hf.buildReady`, `data-no-timeline`, and the runtime adapters that seek CSS, Web Animations and GSAP. `examples/basic` is rendered with HyperFrames 0.9.7 in CI with `--strict`, so `hyperframes lint` errors in the built page fail it, and its frames are checked.
+The runtime relies on these parts of the HyperFrames contract: `data-start` / `data-duration` clips, `window.__hf.buildReady`, `data-no-timeline`, and the runtime adapters that seek CSS, Web Animations and GSAP. `examples/basic` is rendered with HyperFrames 0.9.19 in CI with `--strict`, so `hyperframes lint` errors in the built page fail it, and its frames are checked.
 
 ## HyperFrames gotchas
 
