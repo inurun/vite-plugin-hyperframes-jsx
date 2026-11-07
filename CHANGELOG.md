@@ -7,7 +7,7 @@ All notable changes to this package are listed here. The project follows [Semant
 
 ### ⚠ BREAKING CHANGES
 
-* Node.js 20 is no longer supported. The package now requires Node.js 22.12 or newer.
+* The package now requires Node.js 26 or newer. Node.js 20, 22 and 24 are no longer supported.
 
 ### Features
 
@@ -16,7 +16,6 @@ All notable changes to this package are listed here. The project follows [Semant
 
 ### Compatibility
 
-* checked with HyperFrames 0.9.19 ([b496df3](https://github.com/inurun/vite-plugin-hyperframes-jsx/commit/b496df323d61d46e70ac4d09084432fcb656c568))
 * checked with HyperFrames 0.9.19 ([#9](https://github.com/inurun/vite-plugin-hyperframes-jsx/issues/9)) ([72cc622](https://github.com/inurun/vite-plugin-hyperframes-jsx/commit/72cc622ccba97c53c112e2354adc536ecdb0833c))
 
 ## [0.2.4](https://github.com/inurun/vite-plugin-hyperframes-jsx/compare/v0.2.3...v0.2.4) (2026-11-03)
