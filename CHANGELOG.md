@@ -2,6 +2,22 @@
 
 All notable changes to this package are listed here. The project follows [Semantic Versioning](https://semver.org/); before 1.0, breaking changes bump the minor version.
 
+## [0.3.0](https://github.com/inurun/vite-plugin-hyperframes-jsx/compare/v0.2.4...v0.3.0) (2026-11-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* The package now requires Node.js 26 or newer. Node.js 20, 22 and 24 are no longer supported.
+
+### Features
+
+* require Node.js 26 or newer ([#12](https://github.com/inurun/vite-plugin-hyperframes-jsx/issues/12)) ([3d5d5ed](https://github.com/inurun/vite-plugin-hyperframes-jsx/commit/3d5d5edef475755474bbd09b9263e1b77d64c83c))
+
+
+### Compatibility
+
+* checked with HyperFrames 0.9.19 ([#9](https://github.com/inurun/vite-plugin-hyperframes-jsx/issues/9)) ([72cc622](https://github.com/inurun/vite-plugin-hyperframes-jsx/commit/72cc622ccba97c53c112e2354adc536ecdb0833c))
+
 ## [0.2.4](https://github.com/inurun/vite-plugin-hyperframes-jsx/compare/v0.2.3...v0.2.4) (2026-11-03)
 
 
