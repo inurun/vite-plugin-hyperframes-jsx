@@ -16,33 +16,26 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
-          node-version: 24
+          node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # format, lint, types, tests, build, publint and attw
       - run: pnpm check
 
   test-node:
-    # The oldest Node version in `engines`. pnpm itself needs a newer Node, so install with
-    # Node 24 and run the tests on the older one.
+    # The oldest Node version in `engines`.
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ["22.12"]
+        node: ["26"]
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
-          node-version: 24
+          node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ matrix.node }}
-          # setup-node v5 caches the `packageManager` (pnpm 11) by default, and pnpm 11 does not
-          # run on these Node versions.
-          package-manager-cache: false
       - run: node --version && ./node_modules/.bin/vitest run
 
   render:
@@ -53,7 +46,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
-          node-version: 24
+          node-version: 26
           cache: pnpm
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: pnpm install --frozen-lockfile
