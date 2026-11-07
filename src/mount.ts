@@ -272,7 +272,7 @@ async function build(
       mount(node, { parent: root, ns: HTML_NS });
     } finally {
       setBuildState(null);
-      for (let child = before ? before.nextSibling : root.firstChild; child; ) {
+      for (let child = before ? before.nextSibling : root.firstChild; child;) {
         nodes.push(child);
         child = child.nextSibling;
       }

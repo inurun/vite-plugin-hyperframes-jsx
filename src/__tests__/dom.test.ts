@@ -1,14 +1,16 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { applyProps, applyStyle, SVG_NS } from "../dom";
 
 describe("applyStyle", () => {
   it("adds px to numbers except unitless and custom properties", () => {
     const el = document.createElement("div");
+    const setProperty = vi.spyOn(el.style, "setProperty");
     applyStyle(el, { width: 10, lineHeight: 1.5, WebkitLineClamp: 2, "--gap": 4, margin: 0 });
     expect(el.style.getPropertyValue("width")).toBe("10px");
     expect(el.style.getPropertyValue("line-height")).toBe("1.5");
-    expect(el.style.getPropertyValue("-webkit-line-clamp")).toBe("2");
+    // happy-dom 21 drops `-webkit-line-clamp` (browsers keep it), so check what was set.
+    expect(setProperty).toHaveBeenCalledWith("-webkit-line-clamp", "2");
     expect(el.style.getPropertyValue("--gap")).toBe("4");
     expect(el.style.getPropertyValue("margin")).toBe("0px");
   });
