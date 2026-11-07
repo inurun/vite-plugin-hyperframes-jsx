@@ -77,11 +77,13 @@ type NonAttributeProperty =
 
 /** Attributes of an HTML element, named as its DOM properties (`tabIndex`, `htmlFor`...). */
 type HtmlAttributes<E> = {
-  [K in Exclude<WritableKeys<E>, NonAttributeProperty> as K extends `aria${string}`
-    ? never
-    : NonNullable<E[K]> extends Primitive
-      ? K
-      : never]?: AttributeValue;
+  [
+    K in Exclude<WritableKeys<E>, NonAttributeProperty> as K extends `aria${string}`
+      ? never
+      : NonNullable<E[K]> extends Primitive
+        ? K
+        : never
+  ]?: AttributeValue;
 };
 
 /** Props of the HTML element `<tag>`. */
