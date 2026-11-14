@@ -208,8 +208,8 @@ importers:
         version: link:../..
     devDependencies:
       hyperframes:
-        specifier: 0.9.19
-        version: 0.9.19(@types/node@26.6.6)(supports-color@7.2.0)
+        specifier: 0.9.41
+        version: 0.9.41(@types/node@26.6.6)(supports-color@7.2.0)
       typescript:
         specifier: 7.0.2
         version: 7.0.2
@@ -1524,8 +1524,8 @@ packages:
   hookable@6.1.2:
     resolution: {integrity: sha512-+abwxtiEA52GCVIsQqut3S/uKTbUwYIp4Pe/vv+6py5XiXBCqMZHg6pA6Y5qhgLSEys0/cYuPbO0z1QFj5ZCmg==}
 
-  hyperframes@0.9.19:
-    resolution: {integrity: sha512-/3j1j+dFok7SQKKEljvyHOfn1GlRpgPnDLFeUWVZ7+s8ySsvNN6SLUT+dyzct7GSgzjZXJFZryoHGkhx7kCxTg==}
+  hyperframes@0.9.41:
+    resolution: {integrity: sha512-SMohbxIz+XNLxDFCSoQsJbqwkWLuYYnGasH8QCuSQVbLdKJGdEqRKXSYJfEzlfxPgWv2hUFdpXJlPBMyEO8nGA==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -2977,7 +2977,7 @@ snapshots:
 
   hookable@6.1.2: {}
 
-  hyperframes@0.9.19(@types/node@26.6.6)(supports-color@7.2.0):
+  hyperframes@0.9.41(@types/node@26.6.6)(supports-color@7.2.0):
     dependencies:
       '@hono/node-server': 2.1.4(hono@4.13.13)
       '@puppeteer/browsers': 3.2.3(yauzl@3.4.0)
