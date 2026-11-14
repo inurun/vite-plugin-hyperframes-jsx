@@ -2,6 +2,13 @@
 
 All notable changes to this package are listed here. The project follows [Semantic Versioning](https://semver.org/); before 1.0, breaking changes bump the minor version.
 
+## [0.3.1](https://github.com/inurun/vite-plugin-hyperframes-jsx/compare/v0.3.0...v0.3.1) (2026-11-14)
+
+
+### Compatibility
+
+* checked with HyperFrames 0.9.41 ([d0cff12](https://github.com/inurun/vite-plugin-hyperframes-jsx/commit/d0cff12f46b9b9d3ee389540582f7c6feede77c8)), closes [#14](https://github.com/inurun/vite-plugin-hyperframes-jsx/issues/14)
+
 ## [0.3.0](https://github.com/inurun/vite-plugin-hyperframes-jsx/compare/v0.2.4...v0.3.0) (2026-11-07)
 
 
